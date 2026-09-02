@@ -5,10 +5,12 @@ import Navbar from './components/layout/Navbar'
 import CameraView from './components/camera/CameraView'
 import Gallery from './components/gallery/Gallery'
 import WelcomePage from './pages/WelcomePage'
+import EmailCapturePage from './pages/EmailCapturePage'
 import InstallPrompt from './components/ui/InstallPrompt'
 import PWAUpdatePrompt from './components/ui/PWAUpdatePrompt'
 import SharePage from './pages/SharePage'
-import { photoAPI } from './services/api'
+import { photoAPI, emailAPI } from './services/api'
+import toast from 'react-hot-toast'
 
 function AppContent() {
   const navigate = useNavigate()
@@ -20,6 +22,7 @@ function AppContent() {
   const [showInstallPrompt, setShowInstallPrompt] = useState(false)
   const [showUpdatePrompt, setShowUpdatePrompt] = useState(false)
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(true)
+  const [userEmail, setUserEmail] = useState('')
 
   // Load photos from backend on mount
   useEffect(() => {
@@ -93,6 +96,8 @@ function AppContent() {
   }
 
   const addPhoto = async (photoData) => {
+    let savedPhoto = photoData
+
     // Save to backend
     try {
       const response = await photoAPI.save({
@@ -105,21 +110,34 @@ function AppContent() {
       })
 
       if (response.success) {
-        const savedPhoto = {
+        savedPhoto = {
           ...photoData,
           id: response.data.id,
           share_token: response.data.share_token,
         }
         setPhotos((prev) => [savedPhoto, ...prev])
-        return savedPhoto
       }
     } catch (err) {
       console.warn('Could not save to server, saving locally:', err.message)
+      setPhotos((prev) => [savedPhoto, ...prev])
     }
 
-    // Fallback: save locally
-    setPhotos((prev) => [photoData, ...prev])
-    return photoData
+    // Auto-send email if user provided one
+    if (userEmail && savedPhoto.image) {
+      try {
+        await emailAPI.send({
+          to: userEmail,
+          photoId: savedPhoto.id || null,
+          imageUrl: savedPhoto.image,
+        })
+        toast.success(`Sent to ${userEmail}`)
+      } catch (err) {
+        console.warn('Auto-email failed:', err.message)
+        toast.error('Could not send email. Try again from the gallery.')
+      }
+    }
+
+    return savedPhoto
   }
 
   const deletePhoto = async (id) => {
@@ -143,7 +161,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-brand-dark">
-      {currentView !== 'welcome' && (
+      {currentView !== 'welcome' && currentView !== 'email' && (
         <Navbar
           currentView={currentView}
           setCurrentView={handleNavigate}
@@ -151,18 +169,27 @@ function AppContent() {
         />
       )}
 
-      <main className={currentView !== 'welcome' ? 'pt-16' : ''}>
+      <main className={currentView !== 'welcome' && currentView !== 'email' ? 'pt-16' : ''}>
         {currentView === 'welcome' && (
           <WelcomePage
             photos={photos}
             onStart={() => {
-              sessionStorage.setItem('dec_visited', 'true')
-              setCurrentView('camera')
+              setCurrentView('email')
             }}
             onViewGallery={() => {
               sessionStorage.setItem('dec_visited', 'true')
               setCurrentView('gallery')
             }}
+          />
+        )}
+        {currentView === 'email' && (
+          <EmailCapturePage
+            onContinue={(email) => {
+              setUserEmail(email)
+              sessionStorage.setItem('dec_visited', 'true')
+              setCurrentView('camera')
+            }}
+            onBack={() => setCurrentView('welcome')}
           />
         )}
         {currentView === 'camera' && (
