@@ -6,6 +6,7 @@ import { emailAPI } from '../../services/api'
 import PrinterConnect from '../printer/PrinterConnect'
 
 export default function ShareModal({ image, photoId, onClose }) {
+  const safeImage = typeof image === 'string' ? image : ''
   const [email, setEmail] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -14,16 +15,18 @@ export default function ShareModal({ image, photoId, onClose }) {
   const [printSuccess, setPrintSuccess] = useState(false)
 
   const handleDownload = () => {
+    if (!safeImage) return
     const link = document.createElement('a')
     link.download = `dec-photobooth-${Date.now()}.jpg`
-    link.href = image
+    link.href = safeImage
     link.click()
     toast.success('Downloaded')
   }
 
   const handleCopyLink = async () => {
+    if (!safeImage) return
     try {
-      const response = await fetch(image)
+      const response = await fetch(safeImage)
       const blob = await response.blob()
 
       await navigator.clipboard.write([
@@ -39,9 +42,10 @@ export default function ShareModal({ image, photoId, onClose }) {
   }
 
   const handleNativeShare = async () => {
+    if (!safeImage) return
     if (navigator.share) {
       try {
-        const response = await fetch(image)
+        const response = await fetch(safeImage)
         const blob = await response.blob()
         const file = new File([blob], 'dec-photobooth.jpg', { type: 'image/jpeg' })
 
@@ -75,17 +79,18 @@ export default function ShareModal({ image, photoId, onClose }) {
       const result = await emailAPI.send({
         to: email,
         photoId: photoId || null,
-        imageUrl: image,
+        imageUrl: safeImage,
       })
 
       if (result.success) {
         toast.success('Email sent!')
         setEmail('')
       } else {
-        toast.error(result.error || 'Failed to send email')
+        const errMsg = typeof result.error === 'string' ? result.error : 'Failed to send email'
+        toast.error(errMsg)
       }
     } catch (err) {
-      const msg = err.response?.data?.error || 'Failed to send email'
+      const msg = (typeof err.response?.data?.error === 'string' && err.response.data.error) || 'Failed to send email'
       toast.error(msg)
     } finally {
       setIsSending(false)
@@ -108,7 +113,7 @@ export default function ShareModal({ image, photoId, onClose }) {
     setPrintSuccess(false)
 
     try {
-      await printer.printImage(image, {
+      await printer.printImage(safeImage, {
         density: 2,
         feedLines: 5,
       })
@@ -146,7 +151,7 @@ export default function ShareModal({ image, photoId, onClose }) {
 
         <div className="mb-6">
           <img
-            src={image}
+            src={safeImage}
             alt="Photo strip"
             className="w-full max-h-48 object-contain rounded-xl"
           />

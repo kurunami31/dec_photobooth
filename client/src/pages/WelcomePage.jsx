@@ -105,7 +105,7 @@ export default function WelcomePage({ photos, onStart, onViewGallery }) {
                     className="flex-shrink-0 w-20 h-28 rounded-xl overflow-hidden card-hover border border-white/5"
                   >
                     <img
-                      src={photo.image}
+                      src={typeof photo.image === 'string' ? photo.image : ''}
                       alt="Photo strip"
                       className="w-full h-full object-cover"
                     />

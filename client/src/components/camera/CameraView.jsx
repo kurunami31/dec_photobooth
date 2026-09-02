@@ -206,9 +206,10 @@ export default function CameraView({ onPhotoCapture }) {
 
   // Save completed strip
   const handleSaveStrip = (stripData) => {
+    const imageData = typeof stripData === 'string' ? stripData : stripData?.image || ''
     onPhotoCapture({
       id: Date.now(),
-      image: stripData,
+      image: imageData,
       photos: capturedPhotos,
       timestamp: new Date().toISOString(),
     })

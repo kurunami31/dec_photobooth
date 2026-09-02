@@ -78,7 +78,7 @@ export default function Gallery({ photos, onDelete }) {
               className="group relative aspect-[3/4] rounded-2xl overflow-hidden cursor-pointer card-hover"
             >
               <img
-                src={photo.image}
+                src={typeof photo.image === 'string' ? photo.image : ''}
                 alt={`Photo strip ${index + 1}`}
                 className="w-full h-full object-cover"
               />
@@ -130,7 +130,7 @@ export default function Gallery({ photos, onDelete }) {
           {/* Photo */}
           <div className="max-w-lg w-full mx-4">
             <img
-              src={selectedPhoto.image}
+              src={typeof selectedPhoto.image === 'string' ? selectedPhoto.image : ''}
               alt="Photo strip"
               className="w-full rounded-2xl shadow-2xl"
             />
