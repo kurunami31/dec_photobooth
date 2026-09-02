@@ -33,7 +33,28 @@ const BACKGROUNDS = [
   { id: 'gradient-aurora', name: 'Aurora', category: 'gradient', gradient: 'linear-gradient(135deg, #667eea, #764ba2)' },
   { id: 'gradient-ocean', name: 'Teal', category: 'gradient', gradient: 'linear-gradient(135deg, #11998e, #38ef7d)' },
   { id: 'gradient-fire', name: 'Fire', category: 'gradient', gradient: 'linear-gradient(135deg, #f12711, #f5af19)' },
+
+  // Cute Gradients
+  { id: 'cute-candy', name: 'Candy', category: 'cute', gradient: 'linear-gradient(135deg, #ff9a9e, #fecfef)' },
+  { id: 'cute-lavender', name: 'Lavender', category: 'cute', gradient: 'linear-gradient(135deg, #a18cd1, #fbc2eb)' },
+  { id: 'cute-mint', name: 'Mint', category: 'cute', gradient: 'linear-gradient(135deg, #a8edea, #fed6e3)' },
+  { id: 'cute-peachy', name: 'Peachy', category: 'cute', gradient: 'linear-gradient(135deg, #ffecd2, #fcb69f)' },
+  { id: 'cute-babyblue', name: 'Sky', category: 'cute', gradient: 'linear-gradient(135deg, #89f7fe, #66a6ff)' },
+  { id: 'cute-rose', name: 'Rose', category: 'cute', gradient: 'linear-gradient(135deg, #fda085, #f6d365)' },
+  { id: 'cute-cotton', name: 'Cotton', category: 'cute', gradient: 'linear-gradient(135deg, #e0c3fc, #8ec5fc)' },
+  { id: 'cute-lemonade', name: 'Lemon', category: 'cute', gradient: 'linear-gradient(135deg, #fddb92, #d1fdff)' },
+  { id: 'cute-berry', name: 'Berry', category: 'cute', gradient: 'linear-gradient(135deg, #c471f5, #fa71cd)' },
+  { id: 'cute-sakura', name: 'Sakura', category: 'cute', gradient: 'linear-gradient(135deg, #fbc2eb, #a6c1ee)' },
   
+  // Cute Patterns
+  { id: 'cute-hearts', name: 'Hearts', category: 'cutepattern', pattern: 'hearts' },
+  { id: 'cute-stars', name: 'Stars', category: 'cutepattern', pattern: 'stars' },
+  { id: 'cute-confetti', name: 'Confetti', category: 'cutepattern', pattern: 'confetti' },
+  { id: 'cute-sparkles', name: 'Sparkles', category: 'cutepattern', pattern: 'sparkles' },
+  { id: 'cute-bubbles', name: 'Bubbles', category: 'cutepattern', pattern: 'bubbles' },
+  { id: 'cute-clouds', name: 'Clouds', category: 'cutepattern', pattern: 'clouds' },
+  { id: 'cute-flowers', name: 'Flowers', category: 'cutepattern', pattern: 'flowers' },
+
   // Geometric Patterns
   { id: 'geo-dots', name: 'Dots', category: 'pattern', pattern: 'dots' },
   { id: 'geo-lines', name: 'Lines', category: 'pattern', pattern: 'lines' },
@@ -303,15 +324,98 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
   const drawPattern = (ctx, width, height, pattern, baseColor) => {
     ctx.save()
     
-    // Use a contrasting color for patterns
     const isDark = baseColor && (baseColor === '#1a1a1a' || baseColor === '#3d3d3d' || baseColor?.includes('gradient'))
-    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
-    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+    const isCute = pattern === 'hearts' || pattern === 'stars' || pattern === 'confetti' || pattern === 'sparkles' || pattern === 'bubbles' || pattern === 'clouds' || pattern === 'flowers'
+
+    if (isCute) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)'
+      ctx.fillStyle = 'rgba(255,255,255,0.12)'
+    } else {
+      ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+      ctx.fillStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+    }
     ctx.lineWidth = 1
 
     const size = 30
 
     switch (pattern) {
+      case 'hearts':
+        for (let y = size; y < height; y += size * 1.8) {
+          for (let x = size; x < width; x += size * 1.5) {
+            const offsetX = (Math.floor(y / (size * 1.8)) % 2) * (size * 0.75)
+            drawHeart(ctx, x + offsetX, y, size * 0.4)
+          }
+        }
+        break
+
+      case 'stars':
+        for (let y = size; y < height; y += size * 2) {
+          for (let x = size; x < width; x += size * 2) {
+            const offsetX = (Math.floor(y / (size * 2)) % 2) * size
+            drawStar(ctx, x + offsetX, y, size * 0.35, 5)
+          }
+        }
+        break
+
+      case 'confetti':
+        const confettiColors = ['rgba(255,154,158,0.25)', 'rgba(254,207,239,0.25)', 'rgba(161,140,209,0.25)', 'rgba(137,247,254,0.25)', 'rgba(253,203,140,0.25)']
+        for (let i = 0; i < 40; i++) {
+          const cx = (i * 97 + 13) % width
+          const cy = (i * 73 + 17) % height
+          const cw = 4 + (i % 3) * 3
+          const ch = 8 + (i % 4) * 3
+          ctx.save()
+          ctx.translate(cx, cy)
+          ctx.rotate((i * 1.2) % (Math.PI * 2))
+          ctx.fillStyle = confettiColors[i % confettiColors.length]
+          ctx.fillRect(-cw / 2, -ch / 2, cw, ch)
+          ctx.restore()
+        }
+        break
+
+      case 'sparkles':
+        for (let y = size; y < height; y += size * 2.2) {
+          for (let x = size; x < width; x += size * 2.2) {
+            const sx = x + ((y / size) % 2 === 0 ? 0 : size)
+            drawSparkle(ctx, sx, y, size * 0.3)
+          }
+        }
+        break
+
+      case 'bubbles':
+        for (let y = size; y < height; y += size * 2) {
+          for (let x = size; x < width; x += size * 2) {
+            const offsetX = (Math.floor(y / (size * 2)) % 2) * size
+            const r = 6 + ((x * y) % 5) * 2
+            ctx.beginPath()
+            ctx.arc(x + offsetX, y, r, 0, Math.PI * 2)
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)'
+            ctx.lineWidth = 1.5
+            ctx.stroke()
+            ctx.fillStyle = 'rgba(255,255,255,0.04)'
+            ctx.fill()
+          }
+        }
+        break
+
+      case 'clouds':
+        for (let y = size * 1.5; y < height; y += size * 3) {
+          for (let x = size * 1.5; x < width; x += size * 4) {
+            const ox = (Math.floor(y / (size * 3)) % 2) * (size * 2)
+            drawCloud(ctx, x + ox, y, size * 0.8)
+          }
+        }
+        break
+
+      case 'flowers':
+        for (let y = size * 1.5; y < height; y += size * 3) {
+          for (let x = size * 1.5; x < width; x += size * 3) {
+            const ox = (Math.floor(y / (size * 3)) % 2) * (size * 1.5)
+            drawFlower(ctx, x + ox, y, size * 0.35)
+          }
+        }
+        break
+
       case 'dots':
         for (let x = size / 2; x < width; x += size) {
           for (let y = size / 2; y < height; y += size) {
@@ -469,6 +573,80 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
         break
     }
 
+    ctx.restore()
+  }
+
+  const drawHeart = (ctx, x, y, size) => {
+    ctx.save()
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'
+    ctx.beginPath()
+    ctx.moveTo(x, y + size * 0.3)
+    ctx.bezierCurveTo(x, y - size * 0.5, x - size, y - size * 0.5, x - size, y + size * 0.1)
+    ctx.bezierCurveTo(x - size, y + size * 0.6, x, y + size, x, y + size * 1.2)
+    ctx.bezierCurveTo(x, y + size, x + size, y + size * 0.6, x + size, y + size * 0.1)
+    ctx.bezierCurveTo(x + size, y - size * 0.5, x, y - size * 0.5, x, y + size * 0.3)
+    ctx.fill()
+    ctx.restore()
+  }
+
+  const drawStar = (ctx, cx, cy, size, points) => {
+    ctx.save()
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'
+    ctx.beginPath()
+    for (let i = 0; i < points * 2; i++) {
+      const angle = (i * Math.PI) / points - Math.PI / 2
+      const r = i % 2 === 0 ? size : size * 0.4
+      const x = cx + r * Math.cos(angle)
+      const y = cy + r * Math.sin(angle)
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.closePath()
+    ctx.fill()
+    ctx.restore()
+  }
+
+  const drawSparkle = (ctx, cx, cy, size) => {
+    ctx.save()
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'
+    ctx.beginPath()
+    ctx.moveTo(cx, cy - size)
+    ctx.bezierCurveTo(cx + size * 0.1, cy - size * 0.1, cx + size * 0.1, cy - size * 0.1, cx + size, cy)
+    ctx.bezierCurveTo(cx + size * 0.1, cy + size * 0.1, cx + size * 0.1, cy + size * 0.1, cx, cy + size)
+    ctx.bezierCurveTo(cx - size * 0.1, cy + size * 0.1, cx - size * 0.1, cy + size * 0.1, cx - size, cy)
+    ctx.bezierCurveTo(cx - size * 0.1, cy - size * 0.1, cx - size * 0.1, cy - size * 0.1, cx, cy - size)
+    ctx.fill()
+    ctx.restore()
+  }
+
+  const drawCloud = (ctx, cx, cy, size) => {
+    ctx.save()
+    ctx.fillStyle = 'rgba(255,255,255,0.08)'
+    ctx.beginPath()
+    ctx.arc(cx, cy, size * 0.5, 0, Math.PI * 2)
+    ctx.arc(cx - size * 0.4, cy + size * 0.1, size * 0.35, 0, Math.PI * 2)
+    ctx.arc(cx + size * 0.4, cy + size * 0.1, size * 0.4, 0, Math.PI * 2)
+    ctx.arc(cx + size * 0.15, cy - size * 0.2, size * 0.35, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
+  }
+
+  const drawFlower = (ctx, cx, cy, size) => {
+    ctx.save()
+    ctx.fillStyle = 'rgba(255,255,255,0.10)'
+    const petalCount = 5
+    for (let i = 0; i < petalCount; i++) {
+      const angle = (i / petalCount) * Math.PI * 2 - Math.PI / 2
+      const px = cx + Math.cos(angle) * size * 0.6
+      const py = cy + Math.sin(angle) * size * 0.6
+      ctx.beginPath()
+      ctx.arc(px, py, size * 0.35, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.15)'
+    ctx.beginPath()
+    ctx.arc(cx, cy, size * 0.2, 0, Math.PI * 2)
+    ctx.fill()
     ctx.restore()
   }
 
@@ -645,6 +823,47 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
                         style={{ background: bg.gradient }}
                         title={bg.name}
                       />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cute Gradients */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Cute</p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {BACKGROUNDS.filter(b => b.category === 'cute').map((bg) => (
+                      <button
+                        key={bg.id}
+                        onClick={() => setSelectedBackground(bg.id)}
+                        className={`aspect-square rounded-lg border-2 transition-all ${
+                          selectedBackground === bg.id
+                            ? 'border-brand-red scale-105'
+                            : 'border-white/10 hover:border-white/20'
+                        }`}
+                        style={{ background: bg.gradient }}
+                        title={bg.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cute Patterns */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Cute Patterns</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {BACKGROUNDS.filter(b => b.category === 'cutepattern').map((bg) => (
+                      <button
+                        key={bg.id}
+                        onClick={() => setSelectedBackground(bg.id)}
+                        className={`h-12 rounded-lg border-2 transition-all flex items-center justify-center ${
+                          selectedBackground === bg.id
+                            ? 'border-brand-red scale-105 bg-white/10'
+                            : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+                        }`}
+                        title={bg.name}
+                      >
+                        <span className="text-xs text-gray-300">{bg.name}</span>
+                      </button>
                     ))}
                   </div>
                 </div>
