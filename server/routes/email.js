@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import { sendPhotoEmail } from '../services/emailService.js'
 import db from '../services/supabase.js'
 
@@ -19,16 +19,20 @@ router.post('/send', async (req, res) => {
       return res.status(400).json({ error: 'Invalid email format' })
     }
 
-    // Generate share URL if photoId exists
-    const shareUrl = photoId 
-      ? `${process.env.CLIENT_URL}/share/${photoId}`
-      : process.env.CLIENT_URL
+    // Look up share token from the photo record
+    let shareToken = null
+    if (photoId) {
+      const photo = await db.getPhoto(photoId)
+      if (photo && photo.share_token) {
+        shareToken = photo.share_token
+      }
+    }
 
     // Send email
     const result = await sendPhotoEmail({
       to,
       imageUrl,
-      shareUrl,
+      shareToken,
     })
 
     if (result.success) {

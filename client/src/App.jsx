@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast'
 import Navbar from './components/layout/Navbar'
 import CameraView from './components/camera/CameraView'
 import Gallery from './components/gallery/Gallery'
+import WelcomePage from './pages/WelcomePage'
 import InstallPrompt from './components/ui/InstallPrompt'
 import PWAUpdatePrompt from './components/ui/PWAUpdatePrompt'
 import SharePage from './pages/SharePage'
@@ -11,7 +12,9 @@ import { photoAPI } from './services/api'
 
 function AppContent() {
   const navigate = useNavigate()
-  const [currentView, setCurrentView] = useState('camera')
+  const [currentView, setCurrentView] = useState(() => {
+    return sessionStorage.getItem('dec_visited') ? 'camera' : 'welcome'
+  })
   const [photos, setPhotos] = useState([])
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [showInstallPrompt, setShowInstallPrompt] = useState(false)
@@ -140,13 +143,28 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-brand-dark">
-      <Navbar
-        currentView={currentView}
-        setCurrentView={handleNavigate}
-        photoCount={photos.length}
-      />
+      {currentView !== 'welcome' && (
+        <Navbar
+          currentView={currentView}
+          setCurrentView={handleNavigate}
+          photoCount={photos.length}
+        />
+      )}
 
-      <main className="pt-16">
+      <main className={currentView !== 'welcome' ? 'pt-16' : ''}>
+        {currentView === 'welcome' && (
+          <WelcomePage
+            photos={photos}
+            onStart={() => {
+              sessionStorage.setItem('dec_visited', 'true')
+              setCurrentView('camera')
+            }}
+            onViewGallery={() => {
+              sessionStorage.setItem('dec_visited', 'true')
+              setCurrentView('gallery')
+            }}
+          />
+        )}
         {currentView === 'camera' && (
           <CameraView onPhotoCapture={addPhoto} />
         )}
