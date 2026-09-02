@@ -1,5 +1,4 @@
-import 'dotenv/config'
-import express from 'express'
+﻿import express from 'express'
 import cors from 'cors'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
@@ -11,7 +10,6 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 const app = express()
-const PORT = process.env.PORT || 3001
 
 // Middleware
 app.use(cors({
@@ -34,8 +32,8 @@ app.get('/api/health', (req, res) => {
   })
 })
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
+// Serve static files in production (local dev only, not Vercel)
+if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
   app.use(express.static(join(__dirname, '../client/dist')))
   
   app.get('*', (req, res) => {
@@ -52,9 +50,13 @@ app.use((err, req, res, next) => {
   })
 })
 
-app.listen(PORT, () => {
-  console.log(`DEC Photobooth server running on port ${PORT}`)
-  console.log(`Client URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}`)
-})
+// Only listen when running directly (not in Vercel serverless)
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3001
+  app.listen(PORT, () => {
+    console.log(`DEC Photobooth server running on port ${PORT}`)
+    console.log(`Client URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}`)
+  })
+}
 
 export default app

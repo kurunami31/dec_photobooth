@@ -169,7 +169,7 @@ export default function Gallery({ photos, onDelete }) {
       )}
 
       {/* Share Modal */}
-      {showShareModal && selectedPhoto && (
+      {showShareModal && selectedPhoto && selectedPhoto.image && (
         <ShareModal
           image={selectedPhoto.image}
           photoId={selectedPhoto.id}

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dec-photobooth-v1';
+﻿const CACHE_NAME = 'dec-photobooth-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -30,7 +30,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
@@ -43,6 +43,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const url = new URL(event.request.url);
+
+  // For navigation requests (SPA routes like /gallery, /share/:token),
+  // always serve index.html from cache or network
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.match('/index.html').then((cached) => {
+        return cached || fetch(event.request).catch(() => {
+          return caches.match('/index.html');
+        });
+      })
+    );
+    return;
+  }
+
+  // For other requests, try cache first, then network
   event.respondWith(
     caches.match(event.request).then((response) => {
       if (response) {
