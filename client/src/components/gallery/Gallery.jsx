@@ -172,6 +172,7 @@ export default function Gallery({ photos, onDelete }) {
       {showShareModal && selectedPhoto && (
         <ShareModal
           image={selectedPhoto.image}
+          photoId={selectedPhoto.id}
           onClose={() => setShowShareModal(false)}
         />
       )}

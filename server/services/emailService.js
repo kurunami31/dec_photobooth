@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer'
 
-// Create transporter
 const createTransporter = () => {
   return nodemailer.createTransport({
     service: 'gmail',
@@ -11,7 +10,6 @@ const createTransporter = () => {
   })
 }
 
-// Generate HTML email template
 const generateEmailTemplate = (imageUrl, shareUrl) => {
   return `
     <!DOCTYPE html>
@@ -35,11 +33,6 @@ const generateEmailTemplate = (imageUrl, shareUrl) => {
         .header {
           text-align: center;
           margin-bottom: 30px;
-        }
-        .logo {
-          width: 60px;
-          height: 60px;
-          margin: 0 auto 15px;
         }
         .title {
           color: #ffffff;
@@ -100,7 +93,6 @@ const generateEmailTemplate = (imageUrl, shareUrl) => {
     <body>
       <div class="container">
         <div class="header">
-          <img src="cid:logo" alt="DEC" class="logo">
           <h1 class="title">Your Photo Strip</h1>
           <p class="subtitle">From DEC Photobooth</p>
         </div>
@@ -130,7 +122,6 @@ const generateEmailTemplate = (imageUrl, shareUrl) => {
   `
 }
 
-// Send email with photo
 export const sendPhotoEmail = async ({ to, imageUrl, shareUrl }) => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.warn('Email credentials not configured. Skipping email send.')
@@ -147,11 +138,6 @@ export const sendPhotoEmail = async ({ to, imageUrl, shareUrl }) => {
     to,
     subject: 'Your Photo Strip from DEC Photobooth',
     html: generateEmailTemplate(imageUrl, shareUrl),
-    attachments: [{
-      filename: 'logo.png',
-      path: '../client/public/logo.png',
-      cid: 'logo',
-    }],
   }
 
   try {

@@ -1,10 +1,11 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { X, Download, Mail, Link2, Check, Copy, Share2, Printer, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getPrinter } from '../../services/printer'
+import { emailAPI } from '../../services/api'
 import PrinterConnect from '../printer/PrinterConnect'
 
-export default function ShareModal({ image, onClose }) {
+export default function ShareModal({ image, photoId, onClose }) {
   const [email, setEmail] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -24,11 +25,11 @@ export default function ShareModal({ image, onClose }) {
     try {
       const response = await fetch(image)
       const blob = await response.blob()
-      
+
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/jpeg': blob })
       ])
-      
+
       setCopied(true)
       toast.success('Copied to clipboard')
       setTimeout(() => setCopied(false), 2000)
@@ -43,7 +44,7 @@ export default function ShareModal({ image, onClose }) {
         const response = await fetch(image)
         const blob = await response.blob()
         const file = new File([blob], 'dec-photobooth.jpg', { type: 'image/jpeg' })
-        
+
         await navigator.share({
           title: 'DEC Photobooth',
           files: [file],
@@ -62,13 +63,33 @@ export default function ShareModal({ image, onClose }) {
       return
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      toast.error('Invalid email address')
+      return
+    }
+
     setIsSending(true)
-    
-    setTimeout(() => {
+
+    try {
+      const result = await emailAPI.send({
+        to: email,
+        photoId: photoId || null,
+        imageUrl: image,
+      })
+
+      if (result.success) {
+        toast.success('Email sent!')
+        setEmail('')
+      } else {
+        toast.error(result.error || 'Failed to send email')
+      }
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Failed to send email'
+      toast.error(msg)
+    } finally {
       setIsSending(false)
-      toast.success('Email sent')
-      setEmail('')
-    }, 1500)
+    }
   }
 
   const handlePrint = async () => {
@@ -105,7 +126,7 @@ export default function ShareModal({ image, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div 
+      <div
         className="absolute inset-0"
         onClick={onClose}
       />
@@ -199,10 +220,10 @@ export default function ShareModal({ image, onClose }) {
                 <p className="text-sm text-gray-500">C19-Green printer</p>
               </div>
             </div>
-            
+
             <div className="ml-0 space-y-3">
               <PrinterConnect onConnect={setPrinterConnected} />
-              
+
               {printerConnected && (
                 <button
                   onClick={handlePrint}

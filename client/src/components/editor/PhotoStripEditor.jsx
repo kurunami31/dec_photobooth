@@ -483,9 +483,28 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
     toast.success('Downloaded')
   }
 
-  const handleSave = () => {
+  const [sharePhotoId, setSharePhotoId] = useState(null)
+
+  const handleSave = async () => {
     if (!generatedStrip) return
-    onSave(generatedStrip)
+    const saved = await onSave({
+      image: generatedStrip,
+      layout: selectedLayout,
+      filters: selectedFilter,
+      frame: selectedFrame,
+      text: customText,
+    })
+    return saved
+  }
+
+  const handleShare = async () => {
+    if (!generatedStrip) return
+    // Save first to get a photoId and share_token
+    const saved = await handleSave()
+    if (saved?.share_token) {
+      setSharePhotoId(saved.id)
+    }
+    setShowShareModal(true)
   }
 
   const handlePrint = async () => {
@@ -769,7 +788,7 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
             
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => setShowShareModal(true)}
+                onClick={handleShare}
                 className="btn-secondary flex items-center justify-center gap-2"
               >
                 <Share2 size={16} />
@@ -790,6 +809,7 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
       {showShareModal && (
         <ShareModal
           image={generatedStrip}
+          photoId={sharePhotoId}
           onClose={() => setShowShareModal(false)}
         />
       )}
