@@ -45,30 +45,60 @@ const BACKGROUNDS = [
   { id: 'cute-lemonade', name: 'Lemon', category: 'cute', gradient: 'linear-gradient(135deg, #fddb92, #d1fdff)' },
   { id: 'cute-berry', name: 'Berry', category: 'cute', gradient: 'linear-gradient(135deg, #c471f5, #fa71cd)' },
   { id: 'cute-sakura', name: 'Sakura', category: 'cute', gradient: 'linear-gradient(135deg, #fbc2eb, #a6c1ee)' },
-  
-  // Cute Patterns
-  { id: 'cute-hearts', name: 'Hearts', category: 'cutepattern', pattern: 'hearts' },
-  { id: 'cute-stars', name: 'Stars', category: 'cutepattern', pattern: 'stars' },
-  { id: 'cute-confetti', name: 'Confetti', category: 'cutepattern', pattern: 'confetti' },
-  { id: 'cute-sparkles', name: 'Sparkles', category: 'cutepattern', pattern: 'sparkles' },
-  { id: 'cute-bubbles', name: 'Bubbles', category: 'cutepattern', pattern: 'bubbles' },
-  { id: 'cute-clouds', name: 'Clouds', category: 'cutepattern', pattern: 'clouds' },
-  { id: 'cute-flowers', name: 'Flowers', category: 'cutepattern', pattern: 'flowers' },
-
-  // Geometric Patterns
-  { id: 'geo-dots', name: 'Dots', category: 'pattern', pattern: 'dots' },
-  { id: 'geo-lines', name: 'Lines', category: 'pattern', pattern: 'lines' },
-  { id: 'geo-grid', name: 'Grid', category: 'pattern', pattern: 'grid' },
-  { id: 'geo-diagonal', name: 'Diagonal', category: 'pattern', pattern: 'diagonal' },
-  { id: 'geo-crosshatch', name: 'Cross', category: 'pattern', pattern: 'crosshatch' },
-  { id: 'geo-triangles', name: 'Triangles', category: 'pattern', pattern: 'triangles' },
-  { id: 'geo-hexagons', name: 'Hexagon', category: 'pattern', pattern: 'hexagons' },
-  { id: 'geo-diamonds', name: 'Diamond', category: 'pattern', pattern: 'diamonds' },
-  { id: 'geo-circles', name: 'Circles', category: 'pattern', pattern: 'circles' },
-  { id: 'geo-zigzag', name: 'Zigzag', category: 'pattern', pattern: 'zigzag' },
-  { id: 'geo-waves', name: 'Waves', category: 'pattern', pattern: 'waves' },
-  { id: 'geo-starburst', name: 'Burst', category: 'pattern', pattern: 'starburst' },
 ]
+
+const PATTERNS = [
+  // No pattern
+  { id: 'none', name: 'None', category: 'none', pattern: null },
+  
+  // Geometric Patterns
+  { id: 'geo-dots', name: 'Dots', category: 'geometric', pattern: 'dots' },
+  { id: 'geo-lines', name: 'Lines', category: 'geometric', pattern: 'lines' },
+  { id: 'geo-grid', name: 'Grid', category: 'geometric', pattern: 'grid' },
+  { id: 'geo-diagonal', name: 'Diagonal', category: 'geometric', pattern: 'diagonal' },
+  { id: 'geo-crosshatch', name: 'Cross', category: 'geometric', pattern: 'crosshatch' },
+  { id: 'geo-triangles', name: 'Triangles', category: 'geometric', pattern: 'triangles' },
+  { id: 'geo-hexagons', name: 'Hexagon', category: 'geometric', pattern: 'hexagons' },
+  { id: 'geo-diamonds', name: 'Diamond', category: 'geometric', pattern: 'diamonds' },
+  { id: 'geo-circles', name: 'Circles', category: 'geometric', pattern: 'circles' },
+  { id: 'geo-zigzag', name: 'Zigzag', category: 'geometric', pattern: 'zigzag' },
+  { id: 'geo-waves', name: 'Waves', category: 'geometric', pattern: 'waves' },
+  { id: 'geo-starburst', name: 'Burst', category: 'geometric', pattern: 'starburst' },
+
+  // Cute Patterns
+  { id: 'cute-hearts', name: 'Hearts', category: 'cute', pattern: 'hearts' },
+  { id: 'cute-stars', name: 'Stars', category: 'cute', pattern: 'stars' },
+  { id: 'cute-confetti', name: 'Confetti', category: 'cute', pattern: 'confetti' },
+  { id: 'cute-sparkles', name: 'Sparkles', category: 'cute', pattern: 'sparkles' },
+  { id: 'cute-bubbles', name: 'Bubbles', category: 'cute', pattern: 'bubbles' },
+  { id: 'cute-clouds', name: 'Clouds', category: 'cute', pattern: 'clouds' },
+  { id: 'cute-flowers', name: 'Flowers', category: 'cute', pattern: 'flowers' },
+]
+
+const DARK_BACKGROUNDS = new Set(['black', 'gray', 'gradient-dark', 'gradient-blue'])
+
+const isBackgroundDark = (bg) => {
+  if (!bg) return false
+  if (DARK_BACKGROUNDS.has(bg.id)) return true
+  if (bg.gradient) {
+    const colors = bg.gradient.match(/#[a-fA-F0-9]+/g)
+    if (colors && colors.length >= 2) {
+      const lum1 = getLuminance(colors[0])
+      const lum2 = getLuminance(colors[1])
+      return (lum1 + lum2) / 2 < 0.4
+    }
+  }
+  if (bg.color) return getLuminance(bg.color) < 0.4
+  return false
+}
+
+const getLuminance = (hex) => {
+  const r = parseInt(hex.slice(1, 3), 16) / 255
+  const g = parseInt(hex.slice(3, 5), 16) / 255
+  const b = parseInt(hex.slice(5, 7), 16) / 255
+  const toLinear = (c) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
+}
 
 export default function PhotoStripEditor({ photos, onSave, onReset }) {
   const canvasRef = useRef(null)
@@ -76,10 +106,12 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
   const [selectedFilter, setSelectedFilter] = useState('none')
   const [selectedFrame, setSelectedFrame] = useState('none')
   const [selectedBackground, setSelectedBackground] = useState('white')
+  const [selectedPattern, setSelectedPattern] = useState('none')
   const [customText, setCustomText] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [showFrames, setShowFrames] = useState(false)
   const [showBackgrounds, setShowBackgrounds] = useState(false)
+  const [showPatterns, setShowPatterns] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [generatedStrip, setGeneratedStrip] = useState(null)
   const [printerConnected, setPrinterConnected] = useState(false)
@@ -88,7 +120,7 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
   // Generate photo strip
   useEffect(() => {
     generateStrip()
-  }, [selectedLayout, selectedFilter, selectedFrame, selectedBackground, customText])
+  }, [selectedLayout, selectedFilter, selectedFrame, selectedBackground, selectedPattern, customText])
 
   const generateStrip = async () => {
     const canvas = canvasRef.current
@@ -139,6 +171,7 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
 
     // Draw background
     const bg = BACKGROUNDS.find(b => b.id === selectedBackground)
+    const pat = PATTERNS.find(p => p.id === selectedPattern)
     
     // Base fill
     if (bg?.gradient) {
@@ -153,8 +186,9 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
     ctx.fillRect(0, 0, stripWidth, stripHeight)
     
     // Draw pattern overlay
-    if (bg?.pattern) {
-      drawPattern(ctx, stripWidth, stripHeight, bg.pattern, bg.color)
+    if (pat?.pattern) {
+      const dark = isBackgroundDark(bg)
+      drawPattern(ctx, stripWidth, stripHeight, pat.pattern, dark)
     }
 
     // Load and draw photos
@@ -321,10 +355,9 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
   }
 
   // Draw geometric patterns on canvas
-  const drawPattern = (ctx, width, height, pattern, baseColor) => {
+  const drawPattern = (ctx, width, height, pattern, isDark) => {
     ctx.save()
     
-    const isDark = baseColor && (baseColor === '#1a1a1a' || baseColor === '#3d3d3d' || baseColor?.includes('gradient'))
     const isCute = pattern === 'hearts' || pattern === 'stars' || pattern === 'confetti' || pattern === 'sparkles' || pattern === 'bubbles' || pattern === 'clouds' || pattern === 'flowers'
 
     let strokeColor, fillColor
@@ -770,6 +803,7 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
                 setShowBackgrounds(!showBackgrounds)
                 setShowFilters(false)
                 setShowFrames(false)
+                setShowPatterns(false)
               }}
               className="w-full flex items-center justify-between text-sm font-semibold text-gray-400 hover:text-white transition-colors"
             >
@@ -843,44 +877,80 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
 
-                {/* Cute Patterns */}
+          {/* Patterns */}
+          <div className="glass-card rounded-2xl p-5">
+            <button
+              onClick={() => {
+                setShowPatterns(!showPatterns)
+                setShowFilters(false)
+                setShowFrames(false)
+                setShowBackgrounds(false)
+              }}
+              className="w-full flex items-center justify-between text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <Sparkles size={16} />
+                Pattern
+              </span>
+              <span className="text-brand-red text-xs uppercase tracking-wider">
+                {PATTERNS.find(p => p.id === selectedPattern)?.name}
+              </span>
+            </button>
+            
+            {showPatterns && (
+              <div className="mt-4 space-y-4 max-h-64 overflow-y-auto custom-scrollbar">
+                {/* Geometric Patterns */}
                 <div>
-                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Cute Patterns</p>
+                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Geometric</p>
                   <div className="grid grid-cols-4 gap-2">
-                    {BACKGROUNDS.filter(b => b.category === 'cutepattern').map((bg) => (
+                    <button
+                      onClick={() => setSelectedPattern('none')}
+                      className={`h-12 rounded-lg border-2 transition-all flex items-center justify-center ${
+                        selectedPattern === 'none'
+                          ? 'border-brand-red bg-brand-red/10'
+                          : 'border-white/10 hover:border-white/20 bg-white/5'
+                      }`}
+                      title="None"
+                    >
+                      <span className="text-xs text-gray-400">None</span>
+                    </button>
+                    {PATTERNS.filter(p => p.category === 'geometric').map((p) => (
                       <button
-                        key={bg.id}
-                        onClick={() => setSelectedBackground(bg.id)}
+                        key={p.id}
+                        onClick={() => setSelectedPattern(p.id)}
                         className={`h-12 rounded-lg border-2 transition-all flex items-center justify-center ${
-                          selectedBackground === bg.id
-                            ? 'border-brand-red scale-105 bg-white/10'
-                            : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+                          selectedPattern === p.id
+                            ? 'border-brand-red bg-brand-red/10'
+                            : 'border-white/10 hover:border-white/20 bg-white/5'
                         }`}
-                        title={bg.name}
+                        title={p.name}
                       >
-                        <span className="text-xs text-gray-300">{bg.name}</span>
+                        <span className="text-xs text-gray-400">{p.name}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Patterns */}
+                {/* Cute Patterns */}
                 <div>
-                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Patterns</p>
+                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Cute</p>
                   <div className="grid grid-cols-4 gap-2">
-                    {BACKGROUNDS.filter(b => b.category === 'pattern').map((bg) => (
+                    {PATTERNS.filter(p => p.category === 'cute').map((p) => (
                       <button
-                        key={bg.id}
-                        onClick={() => setSelectedBackground(bg.id)}
+                        key={p.id}
+                        onClick={() => setSelectedPattern(p.id)}
                         className={`h-12 rounded-lg border-2 transition-all flex items-center justify-center ${
-                          selectedBackground === bg.id
-                            ? 'border-brand-red bg-brand-red/10'
-                            : 'border-white/10 hover:border-white/20 bg-white/5'
+                          selectedPattern === p.id
+                            ? 'border-brand-red scale-105 bg-white/10'
+                            : 'border-white/10 hover:border-white/20 hover:bg-white/5'
                         }`}
-                        title={bg.name}
+                        title={p.name}
                       >
-                        <span className="text-xs text-gray-400">{bg.name}</span>
+                        <span className="text-xs text-gray-300">{p.name}</span>
                       </button>
                     ))}
                   </div>
@@ -896,6 +966,7 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
                 setShowFilters(!showFilters)
                 setShowFrames(false)
                 setShowBackgrounds(false)
+                setShowPatterns(false)
               }}
               className="w-full flex items-center justify-between text-sm font-semibold text-gray-400 hover:text-white transition-colors"
             >
@@ -925,6 +996,7 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
                 setShowFrames(!showFrames)
                 setShowFilters(false)
                 setShowBackgrounds(false)
+                setShowPatterns(false)
               }}
               className="w-full flex items-center justify-between text-sm font-semibold text-gray-400 hover:text-white transition-colors"
             >
