@@ -327,14 +327,17 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
     const isDark = baseColor && (baseColor === '#1a1a1a' || baseColor === '#3d3d3d' || baseColor?.includes('gradient'))
     const isCute = pattern === 'hearts' || pattern === 'stars' || pattern === 'confetti' || pattern === 'sparkles' || pattern === 'bubbles' || pattern === 'clouds' || pattern === 'flowers'
 
+    let strokeColor, fillColor
     if (isCute) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)'
-      ctx.fillStyle = 'rgba(255,255,255,0.12)'
+      strokeColor = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'
+      fillColor = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.15)'
     } else {
-      ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
-      ctx.fillStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+      strokeColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+      fillColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
     }
-    ctx.lineWidth = 1
+    ctx.strokeStyle = strokeColor
+    ctx.fillStyle = fillColor
+    ctx.lineWidth = isCute ? 1.5 : 1
 
     const size = 30
 
@@ -358,8 +361,8 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
         break
 
       case 'confetti':
-        const confettiColors = ['rgba(255,154,158,0.25)', 'rgba(254,207,239,0.25)', 'rgba(161,140,209,0.25)', 'rgba(137,247,254,0.25)', 'rgba(253,203,140,0.25)']
-        for (let i = 0; i < 40; i++) {
+        const confettiColors = ['rgba(255,154,158,0.45)', 'rgba(254,207,239,0.45)', 'rgba(161,140,209,0.45)', 'rgba(137,247,254,0.45)', 'rgba(253,203,140,0.45)']
+        for (let i = 0; i < 50; i++) {
           const cx = (i * 97 + 13) % width
           const cy = (i * 73 + 17) % height
           const cw = 4 + (i % 3) * 3
@@ -387,13 +390,13 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
           for (let x = size; x < width; x += size * 2) {
             const offsetX = (Math.floor(y / (size * 2)) % 2) * size
             const r = 6 + ((x * y) % 5) * 2
+            ctx.lineWidth = 1.5
             ctx.beginPath()
             ctx.arc(x + offsetX, y, r, 0, Math.PI * 2)
-            ctx.strokeStyle = 'rgba(255,255,255,0.15)'
-            ctx.lineWidth = 1.5
             ctx.stroke()
-            ctx.fillStyle = 'rgba(255,255,255,0.04)'
+            ctx.globalAlpha = 0.3
             ctx.fill()
+            ctx.globalAlpha = 1
           }
         }
         break
@@ -578,7 +581,6 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
 
   const drawHeart = (ctx, x, y, size) => {
     ctx.save()
-    ctx.fillStyle = 'rgba(255,255,255,0.12)'
     ctx.beginPath()
     ctx.moveTo(x, y + size * 0.3)
     ctx.bezierCurveTo(x, y - size * 0.5, x - size, y - size * 0.5, x - size, y + size * 0.1)
@@ -591,7 +593,6 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
 
   const drawStar = (ctx, cx, cy, size, points) => {
     ctx.save()
-    ctx.fillStyle = 'rgba(255,255,255,0.12)'
     ctx.beginPath()
     for (let i = 0; i < points * 2; i++) {
       const angle = (i * Math.PI) / points - Math.PI / 2
@@ -608,7 +609,6 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
 
   const drawSparkle = (ctx, cx, cy, size) => {
     ctx.save()
-    ctx.fillStyle = 'rgba(255,255,255,0.18)'
     ctx.beginPath()
     ctx.moveTo(cx, cy - size)
     ctx.bezierCurveTo(cx + size * 0.1, cy - size * 0.1, cx + size * 0.1, cy - size * 0.1, cx + size, cy)
@@ -621,7 +621,6 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
 
   const drawCloud = (ctx, cx, cy, size) => {
     ctx.save()
-    ctx.fillStyle = 'rgba(255,255,255,0.08)'
     ctx.beginPath()
     ctx.arc(cx, cy, size * 0.5, 0, Math.PI * 2)
     ctx.arc(cx - size * 0.4, cy + size * 0.1, size * 0.35, 0, Math.PI * 2)
@@ -633,7 +632,6 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
 
   const drawFlower = (ctx, cx, cy, size) => {
     ctx.save()
-    ctx.fillStyle = 'rgba(255,255,255,0.10)'
     const petalCount = 5
     for (let i = 0; i < petalCount; i++) {
       const angle = (i / petalCount) * Math.PI * 2 - Math.PI / 2
@@ -643,7 +641,6 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
       ctx.arc(px, py, size * 0.35, 0, Math.PI * 2)
       ctx.fill()
     }
-    ctx.fillStyle = 'rgba(255,255,255,0.15)'
     ctx.beginPath()
     ctx.arc(cx, cy, size * 0.2, 0, Math.PI * 2)
     ctx.fill()
