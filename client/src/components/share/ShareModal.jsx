@@ -1,11 +1,16 @@
 import { useState } from 'react'
-import { X, Download, Mail, Link2, Check, Copy, Share2 } from 'lucide-react'
+import { X, Download, Mail, Link2, Check, Copy, Share2, Printer, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { getPrinter } from '../../services/printer'
+import PrinterConnect from '../printer/PrinterConnect'
 
 export default function ShareModal({ image, onClose }) {
   const [email, setEmail] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [printerConnected, setPrinterConnected] = useState(false)
+  const [isPrinting, setIsPrinting] = useState(false)
+  const [printSuccess, setPrintSuccess] = useState(false)
 
   const handleDownload = () => {
     const link = document.createElement('a')
@@ -17,14 +22,9 @@ export default function ShareModal({ image, onClose }) {
 
   const handleCopyLink = async () => {
     try {
-      // Convert base64 to blob
       const response = await fetch(image)
       const blob = await response.blob()
       
-      // Create a temporary file URL
-      const url = URL.createObjectURL(blob)
-      
-      // Try to copy the image to clipboard
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/jpeg': blob })
       ])
@@ -64,7 +64,6 @@ export default function ShareModal({ image, onClose }) {
 
     setIsSending(true)
     
-    // Simulate sending (would connect to backend)
     setTimeout(() => {
       setIsSending(false)
       toast.success('Email sent')
@@ -72,20 +71,48 @@ export default function ShareModal({ image, onClose }) {
     }, 1500)
   }
 
+  const handlePrint = async () => {
+    if (!printerConnected) {
+      toast.error('Connect a printer first')
+      return
+    }
+
+    const printer = getPrinter()
+    if (!printer.isConnected) {
+      toast.error('Printer not connected')
+      return
+    }
+
+    setIsPrinting(true)
+    setPrintSuccess(false)
+
+    try {
+      await printer.printImage(image, {
+        density: 2,
+        feedLines: 5,
+      })
+
+      setPrintSuccess(true)
+      toast.success('Printed successfully')
+      setTimeout(() => setPrintSuccess(false), 2000)
+    } catch (error) {
+      console.error('Print error:', error)
+      toast.error('Failed to print')
+    } finally {
+      setIsPrinting(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm">
-      {/* Backdrop */}
       <div 
         className="absolute inset-0"
         onClick={onClose}
       />
 
-      {/* Modal */}
       <div className="relative w-full sm:max-w-md glass-strong rounded-t-3xl sm:rounded-3xl p-6 pb-8 safe-area-bottom">
-        {/* Handle */}
         <div className="sm:hidden w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
 
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold">Share Strip</h3>
           <button
@@ -96,7 +123,6 @@ export default function ShareModal({ image, onClose }) {
           </button>
         </div>
 
-        {/* Preview */}
         <div className="mb-6">
           <img
             src={image}
@@ -105,7 +131,6 @@ export default function ShareModal({ image, onClose }) {
           />
         </div>
 
-        {/* Share Options */}
         <div className="space-y-3">
           {/* Download */}
           <button
@@ -155,11 +180,56 @@ export default function ShareModal({ image, onClose }) {
             </div>
           </button>
 
-          {/* Email */}
+          {/* Bluetooth Print */}
           <div className="p-4 rounded-xl bg-white/5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                <Mail size={20} className="text-purple-400" />
+                {isPrinting ? (
+                  <Loader2 size={20} className="text-purple-400 animate-spin" />
+                ) : printSuccess ? (
+                  <Check size={20} className="text-green-400" />
+                ) : (
+                  <Printer size={20} className="text-purple-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">
+                  {isPrinting ? 'Printing...' : printSuccess ? 'Printed' : 'Thermal Print'}
+                </p>
+                <p className="text-sm text-gray-500">C19-Green printer</p>
+              </div>
+            </div>
+            
+            <div className="ml-0 space-y-3">
+              <PrinterConnect onConnect={setPrinterConnected} />
+              
+              {printerConnected && (
+                <button
+                  onClick={handlePrint}
+                  disabled={isPrinting}
+                  className="w-full btn-primary py-3 flex items-center justify-center gap-2"
+                >
+                  {isPrinting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Printing...
+                    </>
+                  ) : (
+                    <>
+                      <Printer size={16} />
+                      Print Now
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Email */}
+          <div className="p-4 rounded-xl bg-white/5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                <Mail size={20} className="text-orange-400" />
               </div>
               <div>
                 <p className="font-medium">Email</p>

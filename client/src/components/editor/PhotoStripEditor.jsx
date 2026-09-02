@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { 
   Download, Share2, ArrowLeft, LayoutGrid, 
-  Palette, Frame, Type, Sparkles
+  Palette, Frame, Type, Sparkles, Printer, Loader2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import FilterPanel from './FilterPanel'
 import FrameOverlay from './FrameOverlay'
 import ShareModal from '../share/ShareModal'
+import PrinterConnect from '../printer/PrinterConnect'
+import { getPrinter } from '../../services/printer'
 
 const LAYOUTS = [
   { id: 'classic', name: 'Classic', description: '4x1 vertical strip' },
@@ -36,6 +38,8 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
   const [showBackgrounds, setShowBackgrounds] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [generatedStrip, setGeneratedStrip] = useState(null)
+  const [printerConnected, setPrinterConnected] = useState(false)
+  const [isPrinting, setIsPrinting] = useState(false)
 
   // Generate photo strip
   useEffect(() => {
@@ -281,6 +285,35 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
     onSave(generatedStrip)
   }
 
+  const handlePrint = async () => {
+    if (!printerConnected || !generatedStrip) {
+      toast.error('Connect a printer first')
+      return
+    }
+
+    const printer = getPrinter()
+    if (!printer.isConnected) {
+      toast.error('Printer not connected')
+      return
+    }
+
+    setIsPrinting(true)
+
+    try {
+      await printer.printImage(generatedStrip, {
+        density: 2,
+        feedLines: 5,
+      })
+
+      toast.success('Printed successfully')
+    } catch (error) {
+      console.error('Print error:', error)
+      toast.error('Failed to print')
+    } finally {
+      setIsPrinting(false)
+    }
+  }
+
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header */}
@@ -448,6 +481,15 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
             />
           </div>
 
+          {/* Printer Connection */}
+          <div className="glass-card rounded-2xl p-5">
+            <h3 className="text-sm font-semibold text-gray-400 mb-4 flex items-center gap-2">
+              <Printer size={16} />
+              Thermal Printer
+            </h3>
+            <PrinterConnect onConnect={setPrinterConnected} />
+          </div>
+
           {/* Action Buttons */}
           <div className="space-y-3 pt-2">
             <button
@@ -457,6 +499,26 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
               <Download size={18} />
               Download Strip
             </button>
+
+            {printerConnected && (
+              <button
+                onClick={handlePrint}
+                disabled={isPrinting}
+                className="w-full btn-secondary flex items-center justify-center gap-2 py-4 bg-brand-red/10 border-brand-red/20 hover:bg-brand-red/20"
+              >
+                {isPrinting ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Printing...
+                  </>
+                ) : (
+                  <>
+                    <Printer size={18} />
+                    Print Strip
+                  </>
+                )}
+              </button>
+            )}
             
             <div className="grid grid-cols-2 gap-3">
               <button
