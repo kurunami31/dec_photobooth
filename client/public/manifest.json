@@ -1,0 +1,43 @@
+{
+  "name": "DEC Photobooth",
+  "short_name": "PhotoBooth",
+  "description": "Capture memorable moments with filters, frames, and photo strips",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1A1A1A",
+  "theme_color": "#E53935",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["photography", "entertainment"],
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/logo.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "DEC Photobooth Desktop"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "DEC Photobooth Mobile"
+    }
+  ]
+}
