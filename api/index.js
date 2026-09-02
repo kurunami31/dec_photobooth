@@ -182,20 +182,12 @@ app.post('/api/email/send', async (req, res) => {
       }
     }
 
-    try {
-      const logoRes = await fetch(`${clientUrl}/logo.png`)
-      if (logoRes.ok) {
-        const buf = Buffer.from(await logoRes.arrayBuffer())
-        attachments.push({ filename: 'logo.png', content: buf, cid: 'logo', contentDisposition: 'inline' })
-      }
-    } catch {}
-
     await transporter.sendMail({
       from: { name: 'DEC Photobooth', address: process.env.EMAIL_USER },
       to,
       subject: 'Your photobooth moment is here',
-      text: `Your Photobooth Moment\nFrom DEC Photobooth\n\nView and download your photo strip:\n${shareUrl}\n\nThis link expires in 7 days.\n\nCaptured with DEC Photobooth`,
-      html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#111;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#111"><tr><td align="center" style="padding:40px 20px"><table role="presentation" width="480" cellspacing="0" cellpadding="0" border="0" style="max-width:480px;width:100%"><tr><td align="center" style="padding-bottom:32px"><img src="cid:logo" alt="DEC" width="48" height="48" style="display:block;border-radius:12px" /></td></tr><tr><td align="center" style="padding-bottom:8px"><h1 style="margin:0;font-size:24px;font-weight:700;color:#fff;letter-spacing:-0.02em">Your Photobooth Moment</h1></td></tr><tr><td align="center" style="padding-bottom:32px"><p style="margin:0;font-size:14px;color:#888">From DEC Photobooth</p></td></tr><tr><td align="center" style="padding-bottom:32px"><img src="cid:photostrip" alt="Photo strip" style="display:block;max-width:100%;height:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.08)" /></td></tr><tr><td align="center" style="padding-bottom:40px"><a href="${shareUrl}" style="display:inline-block;background:linear-gradient(135deg,#E53935,#C62828);color:#fff;text-decoration:none;padding:14px 32px;border-radius:12px;font-weight:600;font-size:14px">View &amp; Download</a></td></tr><tr><td style="padding-bottom:32px"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)"></div></td></tr><tr><td align="center"><p style="margin:0 0 8px;font-size:12px;color:#666">Captured with DEC Photobooth</p><a href="${shareUrl}" style="font-size:12px;color:#E53935;text-decoration:none">${shareUrl}</a></td></tr><tr><td align="center" style="padding-top:16px"><p style="margin:0;font-size:11px;color:#444">This link expires in 7 days</p></td></tr></table></td></tr></table></body></html>`,
+      text: `Here's your photo strip from DEC Photobooth.\n\nCaptured with DEC Photobooth`,
+      html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#111;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#111"><tr><td align="center" style="padding:40px 20px"><table role="presentation" width="480" cellspacing="0" cellpadding="0" border="0" style="max-width:480px;width:100%"><tr><td align="center" style="padding-bottom:24px"><h1 style="margin:0;font-size:22px;font-weight:700;color:#fff">Your Photobooth Moment</h1></td></tr><tr><td align="center" style="padding-bottom:8px"><p style="margin:0;font-size:14px;color:#888">From DEC Photobooth</p></td></tr><tr><td align="center" style="padding-bottom:24px"><img src="cid:photostrip" alt="Photo strip" style="display:block;max-width:100%;height:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.08)" /></td></tr><tr><td align="center"><p style="margin:0;font-size:12px;color:#666">Captured with DEC Photobooth</p></td></tr></table></td></tr></table></body></html>`,
       attachments,
     })
 
