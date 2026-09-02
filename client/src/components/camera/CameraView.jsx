@@ -1,7 +1,7 @@
 ﻿import { useState, useRef, useCallback, useEffect } from 'react'
 import { 
   Camera, RotateCcw, Settings2, Zap, ZapOff, 
-  CircleDot, Timer, LayoutGrid, ChevronDown, X, Usb
+  CircleDot, Timer, LayoutGrid, ChevronDown, X, Usb, CheckCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Countdown from './Countdown'
@@ -13,7 +13,7 @@ const RESOLUTIONS = [
   { label: '4K', width: 3840, height: 2160 },
 ]
 
-export default function CameraView({ onPhotoCapture }) {
+export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinishSession }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const [stream, setStream] = useState(null)
@@ -527,6 +527,17 @@ export default function CameraView({ onPhotoCapture }) {
               >
                 <RotateCcw size={16} />
                 Start over
+              </button>
+            )}
+
+            {/* Done button - shown between strips when session has photos */}
+            {capturedPhotos.length === 0 && sessionPhotoCount > 0 && !isCountingDown && (
+              <button
+                onClick={onFinishSession}
+                className="btn-primary flex items-center gap-2"
+              >
+                <CheckCircle size={16} />
+                Done ({sessionPhotoCount} {sessionPhotoCount === 1 ? 'strip' : 'strips'})
               </button>
             )}
           </div>

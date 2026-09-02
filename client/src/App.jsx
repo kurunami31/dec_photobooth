@@ -23,6 +23,7 @@ function AppContent() {
   const [showUpdatePrompt, setShowUpdatePrompt] = useState(false)
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(true)
   const [userEmail, setUserEmail] = useState('')
+  const [sessionPhotos, setSessionPhotos] = useState([])
 
   // Load photos from backend on mount
   useEffect(() => {
@@ -115,29 +116,105 @@ function AppContent() {
           id: response.data.id,
           share_token: response.data.share_token,
         }
-        setPhotos((prev) => [savedPhoto, ...prev])
       }
     } catch (err) {
       console.warn('Could not save to server, saving locally:', err.message)
-      setPhotos((prev) => [savedPhoto, ...prev])
     }
 
-    // Auto-send email if user provided one
-    if (userEmail && savedPhoto.image) {
-      try {
-        await emailAPI.send({
-          to: userEmail,
-          photoId: savedPhoto.id || null,
-          imageUrl: savedPhoto.image,
-        })
-        toast.success(`Sent to ${userEmail}`)
-      } catch (err) {
-        console.warn('Auto-email failed:', err.message)
-        toast.error('Could not send email. Try again from the gallery.')
-      }
-    }
-
+    setPhotos((prev) => [savedPhoto, ...prev])
+    setSessionPhotos((prev) => [...prev, savedPhoto])
     return savedPhoto
+  }
+
+  const finishSession = async () => {
+    if (sessionPhotos.length === 0) return
+
+    if (!userEmail) {
+      setSessionPhotos([])
+      navigate('/gallery')
+      return
+    }
+
+    toast.loading('Sending your strips...')
+
+    try {
+      const stripImages = sessionPhotos
+        .map((p) => p.image)
+        .filter((img) => typeof img === 'string' && img.startsWith('data:'))
+
+      if (stripImages.length === 0) {
+        toast.dismiss()
+        toast.error('No images to send')
+        setSessionPhotos([])
+        navigate('/gallery')
+        return
+      }
+
+      // Stitch all strips vertically into one composite image
+      const composite = await new Promise((resolve, reject) => {
+        const imgs = []
+        let loaded = 0
+
+        stripImages.forEach((src, i) => {
+          const img = new Image()
+          img.onload = () => {
+            imgs[i] = img
+            loaded++
+            if (loaded === stripImages.length) resolve(imgs)
+          }
+          img.onerror = () => {
+            loaded++
+            if (loaded === stripImages.length) resolve(imgs.filter(Boolean))
+          }
+          img.src = src
+        })
+      })
+
+      if (composite.length === 0) {
+        toast.dismiss()
+        toast.error('Could not load images')
+        setSessionPhotos([])
+        navigate('/gallery')
+        return
+      }
+
+      const padding = 24
+      const gap = 16
+      const maxWidth = Math.max(...composite.map((img) => img.width))
+      const totalHeight = composite.reduce((sum, img) => sum + img.height, 0) + padding * 2 + gap * (composite.length - 1)
+
+      const canvas = document.createElement('canvas')
+      canvas.width = maxWidth + padding * 2
+      canvas.height = totalHeight
+      const ctx = canvas.getContext('2d')
+
+      ctx.fillStyle = '#0a0a0a'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      let y = padding
+      composite.forEach((img, i) => {
+        const x = padding + (maxWidth - img.width) / 2
+        ctx.drawImage(img, x, y, img.width, img.height)
+        y += img.height + (i < composite.length - 1 ? gap : 0)
+      })
+
+      const compositeDataUrl = canvas.toDataURL('image/jpeg', 0.92)
+
+      await emailAPI.send({
+        to: userEmail,
+        imageUrl: compositeDataUrl,
+      })
+
+      toast.dismiss()
+      toast.success(`Sent to ${userEmail}`)
+    } catch (err) {
+      toast.dismiss()
+      console.warn('Session email failed:', err.message)
+      toast.error('Could not send email. Try again from the gallery.')
+    }
+
+    setSessionPhotos([])
+    navigate('/gallery')
   }
 
   const deletePhoto = async (id) => {
@@ -193,7 +270,11 @@ function AppContent() {
           />
         )}
         {currentView === 'camera' && (
-          <CameraView onPhotoCapture={addPhoto} />
+          <CameraView
+            onPhotoCapture={addPhoto}
+            sessionPhotoCount={sessionPhotos.length}
+            onFinishSession={finishSession}
+          />
         )}
         {currentView === 'gallery' && (
           <Gallery
