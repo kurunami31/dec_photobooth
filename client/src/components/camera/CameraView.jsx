@@ -1,17 +1,26 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+﻿import { useState, useRef, useCallback, useEffect } from 'react'
 import { 
   Camera, RotateCcw, Settings2, Zap, ZapOff, 
-  CircleDot, Timer, LayoutGrid, ChevronDown, X
+  CircleDot, Timer, LayoutGrid, ChevronDown, X, Usb
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Countdown from './Countdown'
 import PhotoStripEditor from '../editor/PhotoStripEditor'
+
+const RESOLUTIONS = [
+  { label: '720p', width: 1280, height: 720 },
+  { label: '1080p', width: 1920, height: 1080 },
+  { label: '4K', width: 3840, height: 2160 },
+]
 
 export default function CameraView({ onPhotoCapture }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const [stream, setStream] = useState(null)
   const [facingMode, setFacingMode] = useState('user')
+  const [selectedDeviceId, setSelectedDeviceId] = useState(null)
+  const [availableCameras, setAvailableCameras] = useState([])
+  const [selectedResolution, setSelectedResolution] = useState(RESOLUTIONS[1])
   const [isCountingDown, setIsCountingDown] = useState(false)
   const [capturedPhotos, setCapturedPhotos] = useState([])
   const [currentShot, setCurrentShot] = useState(0)
@@ -29,15 +38,34 @@ export default function CameraView({ onPhotoCapture }) {
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
   }, [])
 
+  // Enumerate available cameras
+  const enumerateCameras = useCallback(async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const videoDevices = devices.filter((d) => d.kind === 'videoinput')
+      setAvailableCameras(videoDevices)
+    } catch (err) {
+      console.warn('Could not enumerate cameras:', err)
+    }
+  }, [])
+
   // Start camera
   const startCamera = useCallback(async () => {
     try {
+      // Build constraints based on selected device or facing mode
+      const videoConstraints = {}
+
+      if (selectedDeviceId) {
+        videoConstraints.deviceId = { exact: selectedDeviceId }
+      } else {
+        videoConstraints.facingMode = facingMode
+      }
+
+      videoConstraints.width = { ideal: selectedResolution.width }
+      videoConstraints.height = { ideal: selectedResolution.height }
+
       const constraints = {
-        video: {
-          facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 960 },
-        },
+        video: videoConstraints,
         audio: false,
       }
 
@@ -48,12 +76,15 @@ export default function CameraView({ onPhotoCapture }) {
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream
       }
+
+      // After getting stream, enumerate devices to populate the list
+      await enumerateCameras()
     } catch (error) {
       console.error('Camera error:', error)
       setHasPermission(false)
       toast.error('Could not access camera. Please check permissions.')
     }
-  }, [facingMode])
+  }, [facingMode, selectedDeviceId, selectedResolution, enumerateCameras])
 
   // Stop camera
   const stopCamera = useCallback(() => {
@@ -67,11 +98,17 @@ export default function CameraView({ onPhotoCapture }) {
   useEffect(() => {
     startCamera()
     return () => stopCamera()
-  }, [facingMode])
+  }, [facingMode, selectedDeviceId, selectedResolution])
 
-  // Switch camera (front/back)
+  // Switch camera (front/back) - only for phones
   const switchCamera = () => {
+    setSelectedDeviceId(null)
     setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'))
+  }
+
+  // Select a specific camera device
+  const handleDeviceSelect = (deviceId) => {
+    setSelectedDeviceId(deviceId)
   }
 
   // Capture photo
@@ -86,8 +123,8 @@ export default function CameraView({ onPhotoCapture }) {
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
 
-    // Mirror if front camera
-    if (facingMode === 'user') {
+    // Mirror if front camera and no external device selected
+    if (facingMode === 'user' && !selectedDeviceId) {
       ctx.translate(canvas.width, 0)
       ctx.scale(-1, 1)
     }
@@ -107,7 +144,7 @@ export default function CameraView({ onPhotoCapture }) {
     }
 
     return imageData
-  }, [facingMode, isMobile])
+  }, [facingMode, selectedDeviceId, isMobile])
 
   // Handle capture button click
   const handleCapture = async () => {
@@ -179,6 +216,18 @@ export default function CameraView({ onPhotoCapture }) {
     toast.success('Saved to gallery')
   }
 
+  // Check if an external camera is selected
+  const isExternalCamera = !!selectedDeviceId
+
+  // Get the current camera label for display
+  const getCurrentCameraLabel = () => {
+    if (selectedDeviceId) {
+      const cam = availableCameras.find((c) => c.deviceId === selectedDeviceId)
+      return cam?.label || 'External Camera'
+    }
+    return isMobile ? (facingMode === 'user' ? 'Front Camera' : 'Back Camera') : 'Default Camera'
+  }
+
   return (
     <div className="min-h-screen bg-brand-dark pb-24 md:pb-8">
       {/* Background gradient */}
@@ -206,6 +255,12 @@ export default function CameraView({ onPhotoCapture }) {
                   : `${currentShot} of ${shotsPerStrip} captured`
                 }
               </p>
+              {isExternalCamera && (
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <Usb size={14} className="text-brand-red" />
+                  <span className="text-xs text-brand-red font-medium">{getCurrentCameraLabel()}</span>
+                </div>
+              )}
             </div>
 
             {/* Camera Preview */}
@@ -218,7 +273,7 @@ export default function CameraView({ onPhotoCapture }) {
                   playsInline
                   muted
                   className={`w-full h-full object-cover transition-transform duration-300 ${
-                    facingMode === 'user' ? 'scale-x-[-1]' : ''
+                    facingMode === 'user' && !selectedDeviceId ? 'scale-x-[-1]' : ''
                   }`}
                 />
                 
@@ -258,14 +313,16 @@ export default function CameraView({ onPhotoCapture }) {
                   ))}
                 </div>
 
-                {/* Camera switch button */}
-                <button
-                  onClick={switchCamera}
-                  className="absolute top-4 right-4 p-2.5 rounded-xl bg-black/40 hover:bg-black/60 transition-all backdrop-blur-sm"
-                  aria-label="Switch camera"
-                >
-                  <RotateCcw size={18} className="text-white" />
-                </button>
+                {/* Camera switch button - only show when no external camera */}
+                {!isExternalCamera && (
+                  <button
+                    onClick={switchCamera}
+                    className="absolute top-4 right-4 p-2.5 rounded-xl bg-black/40 hover:bg-black/60 transition-all backdrop-blur-sm"
+                    aria-label="Switch camera"
+                  >
+                    <RotateCcw size={18} className="text-white" />
+                  </button>
+                )}
 
                 {/* Bottom controls */}
                 <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
@@ -307,6 +364,55 @@ export default function CameraView({ onPhotoCapture }) {
                   </div>
                   
                   <div className="space-y-5">
+                    {/* Camera Device Picker */}
+                    {availableCameras.length > 1 && (
+                      <div>
+                        <label className="text-sm text-gray-400 flex items-center gap-2 mb-3">
+                          <Camera size={14} />
+                          Camera
+                        </label>
+                        <div className="space-y-1.5">
+                          {availableCameras.map((cam) => (
+                            <button
+                              key={cam.deviceId}
+                              onClick={() => handleDeviceSelect(cam.deviceId)}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-all ${
+                                selectedDeviceId === cam.deviceId
+                                  ? 'bg-brand-red/10 text-brand-red border border-brand-red/20'
+                                  : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
+                              }`}
+                            >
+                              <Usb size={14} className="flex-shrink-0" />
+                              <span className="truncate">{cam.label || `Camera ${cam.deviceId.slice(0, 8)}`}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Resolution */}
+                    <div>
+                      <label className="text-sm text-gray-400 flex items-center gap-2 mb-3">
+                        <LayoutGrid size={14} />
+                        Resolution
+                      </label>
+                      <div className="flex gap-2">
+                        {RESOLUTIONS.map((res) => (
+                          <button
+                            key={res.label}
+                            onClick={() => setSelectedResolution(res)}
+                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                              selectedResolution.label === res.label
+                                ? 'bg-brand-red text-white'
+                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                            }`}
+                          >
+                            {res.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Shots per strip */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
