@@ -18,12 +18,35 @@ const LAYOUTS = [
 ]
 
 const BACKGROUNDS = [
-  { id: 'white', name: 'Clean', color: '#ffffff' },
-  { id: 'black', name: 'Dark', color: '#1a1a1a' },
-  { id: 'cream', name: 'Warm', color: '#f5f0e8' },
-  { id: 'gradient-red', name: 'Brand', gradient: 'linear-gradient(135deg, #E53935, #C62828)' },
-  { id: 'gradient-dark', name: 'Slate', gradient: 'linear-gradient(135deg, #2d2d2d, #1a1a1a)' },
-  { id: 'gradient-blue', name: 'Ocean', gradient: 'linear-gradient(135deg, #1e3a5f, #0d1b2a)' },
+  // Solid Colors
+  { id: 'white', name: 'Clean', category: 'solid', color: '#ffffff' },
+  { id: 'black', name: 'Dark', category: 'solid', color: '#1a1a1a' },
+  { id: 'cream', name: 'Warm', category: 'solid', color: '#f5f0e8' },
+  { id: 'gray', name: 'Gray', category: 'solid', color: '#3d3d3d' },
+  { id: 'offwhite', name: 'Ivory', category: 'solid', color: '#f8f8f8' },
+  
+  // Gradients
+  { id: 'gradient-red', name: 'Brand', category: 'gradient', gradient: 'linear-gradient(135deg, #E53935, #C62828)' },
+  { id: 'gradient-dark', name: 'Slate', category: 'gradient', gradient: 'linear-gradient(135deg, #2d2d2d, #1a1a1a)' },
+  { id: 'gradient-blue', name: 'Ocean', category: 'gradient', gradient: 'linear-gradient(135deg, #1e3a5f, #0d1b2a)' },
+  { id: 'gradient-sunset', name: 'Sunset', category: 'gradient', gradient: 'linear-gradient(135deg, #f093fb, #f5576c)' },
+  { id: 'gradient-aurora', name: 'Aurora', category: 'gradient', gradient: 'linear-gradient(135deg, #667eea, #764ba2)' },
+  { id: 'gradient-ocean', name: 'Teal', category: 'gradient', gradient: 'linear-gradient(135deg, #11998e, #38ef7d)' },
+  { id: 'gradient-fire', name: 'Fire', category: 'gradient', gradient: 'linear-gradient(135deg, #f12711, #f5af19)' },
+  
+  // Geometric Patterns
+  { id: 'geo-dots', name: 'Dots', category: 'pattern', pattern: 'dots' },
+  { id: 'geo-lines', name: 'Lines', category: 'pattern', pattern: 'lines' },
+  { id: 'geo-grid', name: 'Grid', category: 'pattern', pattern: 'grid' },
+  { id: 'geo-diagonal', name: 'Diagonal', category: 'pattern', pattern: 'diagonal' },
+  { id: 'geo-crosshatch', name: 'Cross', category: 'pattern', pattern: 'crosshatch' },
+  { id: 'geo-triangles', name: 'Triangles', category: 'pattern', pattern: 'triangles' },
+  { id: 'geo-hexagons', name: 'Hexagon', category: 'pattern', pattern: 'hexagons' },
+  { id: 'geo-diamonds', name: 'Diamond', category: 'pattern', pattern: 'diamonds' },
+  { id: 'geo-circles', name: 'Circles', category: 'pattern', pattern: 'circles' },
+  { id: 'geo-zigzag', name: 'Zigzag', category: 'pattern', pattern: 'zigzag' },
+  { id: 'geo-waves', name: 'Waves', category: 'pattern', pattern: 'waves' },
+  { id: 'geo-starburst', name: 'Burst', category: 'pattern', pattern: 'starburst' },
 ]
 
 export default function PhotoStripEditor({ photos, onSave, onReset }) {
@@ -95,6 +118,8 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
 
     // Draw background
     const bg = BACKGROUNDS.find(b => b.id === selectedBackground)
+    
+    // Base fill
     if (bg?.gradient) {
       const gradient = ctx.createLinearGradient(0, 0, stripWidth, stripHeight)
       const colors = bg.gradient.match(/#[a-fA-F0-9]+/g)
@@ -105,6 +130,11 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
       ctx.fillStyle = bg?.color || '#ffffff'
     }
     ctx.fillRect(0, 0, stripWidth, stripHeight)
+    
+    // Draw pattern overlay
+    if (bg?.pattern) {
+      drawPattern(ctx, stripWidth, stripHeight, bg.pattern, bg.color)
+    }
 
     // Load and draw photos
     const loadPromises = photos.map((photo, index) => {
@@ -269,6 +299,179 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
     }
   }
 
+  // Draw geometric patterns on canvas
+  const drawPattern = (ctx, width, height, pattern, baseColor) => {
+    ctx.save()
+    
+    // Use a contrasting color for patterns
+    const isDark = baseColor && (baseColor === '#1a1a1a' || baseColor === '#3d3d3d' || baseColor?.includes('gradient'))
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+    ctx.lineWidth = 1
+
+    const size = 30
+
+    switch (pattern) {
+      case 'dots':
+        for (let x = size / 2; x < width; x += size) {
+          for (let y = size / 2; y < height; y += size) {
+            ctx.beginPath()
+            ctx.arc(x, y, 3, 0, Math.PI * 2)
+            ctx.fill()
+          }
+        }
+        break
+
+      case 'lines':
+        for (let i = -height; i < width + height; i += size) {
+          ctx.beginPath()
+          ctx.moveTo(i, 0)
+          ctx.lineTo(i + height, height)
+          ctx.stroke()
+        }
+        break
+
+      case 'grid':
+        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'
+        for (let x = 0; x < width; x += size) {
+          ctx.beginPath()
+          ctx.moveTo(x, 0)
+          ctx.lineTo(x, height)
+          ctx.stroke()
+        }
+        for (let y = 0; y < height; y += size) {
+          ctx.beginPath()
+          ctx.moveTo(0, y)
+          ctx.lineTo(width, y)
+          ctx.stroke()
+        }
+        break
+
+      case 'diagonal':
+        for (let i = -height; i < width + height; i += size) {
+          ctx.beginPath()
+          ctx.moveTo(i, 0)
+          ctx.lineTo(i + height, height)
+          ctx.stroke()
+          ctx.beginPath()
+          ctx.moveTo(i + size, 0)
+          ctx.lineTo(i + size + height, height)
+          ctx.stroke()
+        }
+        break
+
+      case 'crosshatch':
+        for (let i = -height; i < width + height; i += size) {
+          ctx.beginPath()
+          ctx.moveTo(i, 0)
+          ctx.lineTo(i + height, height)
+          ctx.stroke()
+          ctx.beginPath()
+          ctx.moveTo(i, height)
+          ctx.lineTo(i + height, 0)
+          ctx.stroke()
+        }
+        break
+
+      case 'triangles':
+        for (let y = 0; y < height; y += size) {
+          for (let x = (y % (size * 2) === 0 ? 0 : size / 2); x < width; x += size) {
+            ctx.beginPath()
+            ctx.moveTo(x, y + size)
+            ctx.lineTo(x + size / 2, y)
+            ctx.lineTo(x + size, y + size)
+            ctx.closePath()
+            ctx.stroke()
+          }
+        }
+        break
+
+      case 'hexagons':
+        const hexSize = size * 0.8
+        for (let y = 0; y < height + hexSize; y += hexSize * 1.5) {
+          for (let x = 0; x < width + hexSize; x += hexSize * 1.73) {
+            const offsetX = (Math.floor(y / (hexSize * 1.5)) % 2) * (hexSize * 0.865)
+            ctx.beginPath()
+            for (let i = 0; i < 6; i++) {
+              const angle = (Math.PI / 3) * i
+              const hx = x + offsetX + hexSize * Math.cos(angle)
+              const hy = y + hexSize * Math.sin(angle)
+              if (i === 0) ctx.moveTo(hx, hy)
+              else ctx.lineTo(hx, hy)
+            }
+            ctx.closePath()
+            ctx.stroke()
+          }
+        }
+        break
+
+      case 'diamonds':
+        for (let y = 0; y < height; y += size) {
+          for (let x = 0; x < width; x += size) {
+            ctx.beginPath()
+            ctx.moveTo(x + size / 2, y)
+            ctx.lineTo(x + size, y + size / 2)
+            ctx.lineTo(x + size / 2, y + size)
+            ctx.lineTo(x, y + size / 2)
+            ctx.closePath()
+            ctx.stroke()
+          }
+        }
+        break
+
+      case 'circles':
+        for (let y = size; y < height; y += size * 2) {
+          for (let x = size; x < width; x += size * 2) {
+            ctx.beginPath()
+            ctx.arc(x, y, size / 2 - 2, 0, Math.PI * 2)
+            ctx.stroke()
+          }
+        }
+        break
+
+      case 'zigzag':
+        for (let y = size / 2; y < height; y += size) {
+          ctx.beginPath()
+          let startX = 0
+          ctx.moveTo(startX, y)
+          for (let x = 0; x < width; x += size / 2) {
+            ctx.lineTo(x + size / 4, y + (x % size === 0 ? size / 3 : -size / 3))
+          }
+          ctx.stroke()
+        }
+        break
+
+      case 'waves':
+        for (let y = size; y < height; y += size * 1.5) {
+          ctx.beginPath()
+          ctx.moveTo(0, y)
+          for (let x = 0; x < width; x += 5) {
+            ctx.lineTo(x, y + Math.sin(x / 20) * 10)
+          }
+          ctx.stroke()
+        }
+        break
+
+      case 'starburst':
+        const centerX = width / 2
+        const centerY = height / 2
+        const rays = 24
+        for (let i = 0; i < rays; i++) {
+          const angle = (i / rays) * Math.PI * 2
+          ctx.beginPath()
+          ctx.moveTo(centerX, centerY)
+          ctx.lineTo(
+            centerX + Math.cos(angle) * Math.max(width, height),
+            centerY + Math.sin(angle) * Math.max(width, height)
+          )
+          ctx.stroke()
+        }
+        break
+    }
+
+    ctx.restore()
+  }
+
   const handleDownload = () => {
     if (!generatedStrip) return
 
@@ -386,23 +589,67 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
             </button>
             
             {showBackgrounds && (
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                {BACKGROUNDS.map((bg) => (
-                  <button
-                    key={bg.id}
-                    onClick={() => setSelectedBackground(bg.id)}
-                    className={`h-12 rounded-lg border-2 transition-all ${
-                      selectedBackground === bg.id
-                        ? 'border-brand-red scale-105'
-                        : 'border-white/10 hover:border-white/20'
-                    }`}
-                    style={{
-                      background: bg.gradient || bg.color,
-                    }}
-                  >
-                    <span className="sr-only">{bg.name}</span>
-                  </button>
-                ))}
+              <div className="mt-4 space-y-4 max-h-64 overflow-y-auto custom-scrollbar">
+                {/* Solid Colors */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Colors</p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {BACKGROUNDS.filter(b => b.category === 'solid').map((bg) => (
+                      <button
+                        key={bg.id}
+                        onClick={() => setSelectedBackground(bg.id)}
+                        className={`aspect-square rounded-lg border-2 transition-all ${
+                          selectedBackground === bg.id
+                            ? 'border-brand-red scale-105'
+                            : 'border-white/10 hover:border-white/20'
+                        }`}
+                        style={{ background: bg.color }}
+                        title={bg.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Gradients */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Gradients</p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {BACKGROUNDS.filter(b => b.category === 'gradient').map((bg) => (
+                      <button
+                        key={bg.id}
+                        onClick={() => setSelectedBackground(bg.id)}
+                        className={`aspect-square rounded-lg border-2 transition-all ${
+                          selectedBackground === bg.id
+                            ? 'border-brand-red scale-105'
+                            : 'border-white/10 hover:border-white/20'
+                        }`}
+                        style={{ background: bg.gradient }}
+                        title={bg.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Patterns */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Patterns</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {BACKGROUNDS.filter(b => b.category === 'pattern').map((bg) => (
+                      <button
+                        key={bg.id}
+                        onClick={() => setSelectedBackground(bg.id)}
+                        className={`h-12 rounded-lg border-2 transition-all flex items-center justify-center ${
+                          selectedBackground === bg.id
+                            ? 'border-brand-red bg-brand-red/10'
+                            : 'border-white/10 hover:border-white/20 bg-white/5'
+                        }`}
+                        title={bg.name}
+                      >
+                        <span className="text-xs text-gray-400">{bg.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>
