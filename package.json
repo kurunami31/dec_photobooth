@@ -1,0 +1,12 @@
+{
+  "name": "dec-photobooth",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "nodemailer": "^6.9.7",
+    "uuid": "^9.0.0"
+  }
+}

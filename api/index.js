@@ -3,7 +3,6 @@ import cors from 'cors'
 import { v4 as uuidv4 } from 'uuid'
 import { createClient } from '@supabase/supabase-js'
 
-// --- Supabase client ---
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
@@ -55,12 +54,10 @@ app.use(cors({ origin: true, credentials: true }))
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ extended: true, limit: '50mb' }))
 
-// --- Health ---
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '1.0.0' })
 })
 
-// --- Photos CRUD ---
 app.get('/api/photos', async (req, res) => {
   try {
     const { limit = 20 } = req.query
@@ -145,7 +142,6 @@ app.delete('/api/photos/:id', async (req, res) => {
   }
 })
 
-// --- Email ---
 app.post('/api/email/validate', (req, res) => {
   const { email } = req.body
   if (!email) return res.status(400).json({ valid: false, error: 'Email is required' })
@@ -178,14 +174,14 @@ app.post('/api/email/send', async (req, res) => {
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
     const shareUrl = shareToken ? `${clientUrl}/share/${shareToken}` : clientUrl
 
-    // Build photo attachment
     const attachments = []
     if (imageUrl && imageUrl.startsWith('data:')) {
       const base64 = imageUrl.split(',')[1]
-      attachments.push({ filename: 'photostrip.jpg', content: Buffer.from(base64, 'base64'), cid: 'photostrip', contentDisposition: 'inline' })
+      if (base64) {
+        attachments.push({ filename: 'photostrip.jpg', content: Buffer.from(base64, 'base64'), cid: 'photostrip', contentDisposition: 'inline' })
+      }
     }
 
-    // Try to fetch logo
     try {
       const logoRes = await fetch(`${clientUrl}/logo.png`)
       if (logoRes.ok) {
@@ -211,7 +207,6 @@ app.post('/api/email/send', async (req, res) => {
   }
 })
 
-// Error handler
 app.use((err, req, res, next) => {
   console.error('Server error:', err)
   res.status(500).json({ error: 'Internal server error' })
