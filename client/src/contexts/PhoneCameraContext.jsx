@@ -38,7 +38,7 @@ export function PhoneCameraProvider({ children }) {
         const track = remoteStream.getVideoTracks()[0]
         if (track) {
           const settings = track.getSettings()
-          console.log('Received stream resolution:', settings.width, 'x', settings.height)
+          console.log('Received stream:', settings.width || 'unknown', 'x', settings.height || 'unknown', '| Label:', track.label)
         }
         setExternalStream(remoteStream)
         setIsConnected(true)
