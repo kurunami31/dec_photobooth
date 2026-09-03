@@ -52,14 +52,12 @@ export default function PhoneCameraPage() {
         })
 
         peer.on('open', () => {
+          setStatus('connected')
           const call = peer.call(desktopPeerId, stream, {
             videoCodec: 'vp9',
             bandwidth: 10000,
           })
           if (call) {
-            call.on('stream', () => {
-              setStatus('connected')
-            })
             call.on('close', () => {
               setStatus('connecting')
             })
