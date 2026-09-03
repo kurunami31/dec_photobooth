@@ -151,7 +151,7 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
     ctx.setTransform(1, 0, 0, 1, 0, 0)
 
     // Get image data
-    const imageData = canvas.toDataURL('image/jpeg', 0.92)
+    const imageData = canvas.toDataURL('image/jpeg', 0.98)
 
     // Trigger haptic feedback on mobile
     if (isMobile && navigator.vibrate) {

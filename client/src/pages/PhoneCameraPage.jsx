@@ -35,9 +35,10 @@ export default function PhoneCameraPage() {
 
         const track = stream.getVideoTracks()[0]
         const settings = track.getSettings()
+        const capabilities = track.getCapabilities ? track.getCapabilities() : {}
         console.log('Phone camera resolution:', settings.width, 'x', settings.height)
 
-        if (settings.torch !== undefined) {
+        if (capabilities.torch) {
           setTorchSupported(true)
         }
 

@@ -202,7 +202,7 @@ function AppContent({ onConnectPhone }) {
         y += img.height + (i < composite.length - 1 ? gap : 0)
       })
 
-      const compositeDataUrl = canvas.toDataURL('image/jpeg', 0.92)
+      const compositeDataUrl = canvas.toDataURL('image/jpeg', 0.98)
 
       await emailAPI.send({
         to: userEmail,

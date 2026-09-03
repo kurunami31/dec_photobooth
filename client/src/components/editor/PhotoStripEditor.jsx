@@ -290,7 +290,7 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
     ctx.globalAlpha = 1
 
     // Store generated strip
-    const stripData = canvas.toDataURL('image/jpeg', 0.95)
+    const stripData = canvas.toDataURL('image/jpeg', 0.98)
     setGeneratedStrip(stripData)
   }
 
