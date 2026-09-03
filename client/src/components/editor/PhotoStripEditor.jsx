@@ -238,7 +238,7 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
           y = padding
           break
         case 'polaroid':
-          x = padding + (stripWidth - photoWidth - padding * 3) / 2 + padding
+          x = (stripWidth - photoWidth) / 2
           y = padding + index * (photoHeight + gap + 40)
           break
         default:
