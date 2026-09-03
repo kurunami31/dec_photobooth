@@ -353,121 +353,127 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
 
               {/* Settings Panel */}
               {showSettings && (
-                <div className="absolute -bottom-4 left-0 right-0 glass-strong rounded-2xl p-5 z-10 mt-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-sm">Settings</h3>
-                    <button 
-                      onClick={() => setShowSettings(false)}
-                      className="p-1 rounded-lg hover:bg-white/10"
-                    >
-                      <X size={16} className="text-gray-400" />
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-5">
-                    {/* Camera Device Picker */}
-                    {availableCameras.length > 1 && (
+                <>
+                  <div 
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+                    onClick={() => setShowSettings(false)} 
+                  />
+                  <div className="fixed inset-x-0 bottom-0 md:absolute md:-bottom-4 md:left-0 md:right-0 glass-strong rounded-t-2xl md:rounded-2xl p-5 z-50 md:z-10 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-sm">Settings</h3>
+                      <button 
+                        onClick={() => setShowSettings(false)}
+                        className="p-1 rounded-lg hover:bg-white/10"
+                      >
+                        <X size={16} className="text-gray-400" />
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-5">
+                      {/* Camera Device Picker */}
+                      {availableCameras.length > 1 && (
+                        <div>
+                          <label className="text-sm text-gray-400 flex items-center gap-2 mb-3">
+                            <Camera size={14} />
+                            Camera
+                          </label>
+                          <div className="space-y-1.5">
+                            {availableCameras.map((cam) => (
+                              <button
+                                key={cam.deviceId}
+                                onClick={() => handleDeviceSelect(cam.deviceId)}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-all ${
+                                  selectedDeviceId === cam.deviceId
+                                    ? 'bg-brand-red/10 text-brand-red border border-brand-red/20'
+                                    : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
+                                }`}
+                              >
+                                <Usb size={14} className="flex-shrink-0" />
+                                <span className="truncate">{cam.label || `Camera ${cam.deviceId.slice(0, 8)}`}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Resolution */}
                       <div>
                         <label className="text-sm text-gray-400 flex items-center gap-2 mb-3">
-                          <Camera size={14} />
-                          Camera
+                          <LayoutGrid size={14} />
+                          Resolution
                         </label>
-                        <div className="space-y-1.5">
-                          {availableCameras.map((cam) => (
+                        <div className="flex gap-2">
+                          {RESOLUTIONS.map((res) => (
                             <button
-                              key={cam.deviceId}
-                              onClick={() => handleDeviceSelect(cam.deviceId)}
-                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-all ${
-                                selectedDeviceId === cam.deviceId
-                                  ? 'bg-brand-red/10 text-brand-red border border-brand-red/20'
-                                  : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
+                              key={res.label}
+                              onClick={() => setSelectedResolution(res)}
+                              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                                selectedResolution.label === res.label
+                                  ? 'bg-brand-red text-white'
+                                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
                               }`}
                             >
-                              <Usb size={14} className="flex-shrink-0" />
-                              <span className="truncate">{cam.label || `Camera ${cam.deviceId.slice(0, 8)}`}</span>
+                              {res.label}
                             </button>
                           ))}
                         </div>
                       </div>
-                    )}
 
-                    {/* Resolution */}
-                    <div>
-                      <label className="text-sm text-gray-400 flex items-center gap-2 mb-3">
-                        <LayoutGrid size={14} />
-                        Resolution
-                      </label>
-                      <div className="flex gap-2">
-                        {RESOLUTIONS.map((res) => (
-                          <button
-                            key={res.label}
-                            onClick={() => setSelectedResolution(res)}
-                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                              selectedResolution.label === res.label
-                                ? 'bg-brand-red text-white'
-                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                            }`}
-                          >
-                            {res.label}
-                          </button>
-                        ))}
+                      {/* Shots per strip */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm text-gray-400 flex items-center gap-2">
+                            <LayoutGrid size={14} />
+                            Photos per strip
+                          </label>
+                          <span className="text-white font-medium">{shotsPerStrip}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="2"
+                          max="6"
+                          value={shotsPerStrip}
+                          onChange={(e) => {
+                            setShotsPerStrip(parseInt(e.target.value))
+                            setCapturedPhotos([])
+                            setCurrentShot(0)
+                          }}
+                          className="w-full accent-brand-red h-1"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>2</span>
+                          <span>6</span>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Shots per strip */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm text-gray-400 flex items-center gap-2">
-                          <LayoutGrid size={14} />
-                          Photos per strip
-                        </label>
-                        <span className="text-white font-medium">{shotsPerStrip}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="2"
-                        max="6"
-                        value={shotsPerStrip}
-                        onChange={(e) => {
-                          setShotsPerStrip(parseInt(e.target.value))
-                          setCapturedPhotos([])
-                          setCurrentShot(0)
-                        }}
-                        className="w-full accent-brand-red h-1"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>2</span>
-                        <span>6</span>
-                      </div>
-                    </div>
-
-                    {/* Countdown duration */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm text-gray-400 flex items-center gap-2">
-                          <Timer size={14} />
-                          Countdown
-                        </label>
-                        <span className="text-white font-medium">{countdownDuration}s</span>
-                      </div>
-                      <div className="flex gap-2">
-                        {[1, 2, 3, 5].map((sec) => (
-                          <button
-                            key={sec}
-                            onClick={() => setCountdownDuration(sec)}
-                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                              countdownDuration === sec
-                                ? 'bg-brand-red text-white'
-                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                            }`}
-                          >
-                            {sec}s
-                          </button>
-                        ))}
+                      {/* Countdown duration */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm text-gray-400 flex items-center gap-2">
+                            <Timer size={14} />
+                            Countdown
+                          </label>
+                          <span className="text-white font-medium">{countdownDuration}s</span>
+                        </div>
+                        <div className="flex gap-2">
+                          {[1, 2, 3, 5].map((sec) => (
+                            <button
+                              key={sec}
+                              onClick={() => setCountdownDuration(sec)}
+                              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                                countdownDuration === sec
+                                  ? 'bg-brand-red text-white'
+                                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                              }`}
+                            >
+                              {sec}s
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                </>
               )}
 
               {/* Hidden canvas for capture */}
