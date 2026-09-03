@@ -285,7 +285,7 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
       ctx.fillStyle = bg?.color === '#1a1a1a' || bg?.gradient ? '#ffffff' : '#333333'
       ctx.font = '600 14px Inter, sans-serif'
       ctx.textAlign = 'center'
-      ctx.fillText(customText, stripWidth / 2, stripHeight - 35)
+      ctx.fillText(customText, stripWidth / 2, stripHeight - 72)
     }
 
     // Draw logo
