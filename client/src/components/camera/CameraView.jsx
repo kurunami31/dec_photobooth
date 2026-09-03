@@ -373,7 +373,7 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
                     className="fixed inset-0 bg-black/50 z-40 md:hidden" 
                     onClick={() => setShowSettings(false)} 
                   />
-                  <div className="fixed inset-x-0 bottom-0 md:absolute md:-bottom-4 md:left-0 md:right-0 glass-strong rounded-t-2xl md:rounded-2xl p-5 z-50 md:z-10 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                  <div className="fixed inset-x-0 top-12 bottom-0 md:static md:inset-auto md:-bottom-4 md:left-0 md:right-0 glass-strong md:rounded-2xl rounded-t-2xl p-5 z-50 md:z-10 overflow-y-auto custom-scrollbar">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold text-sm">Settings</h3>
                       <button 
