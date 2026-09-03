@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Navbar from './components/layout/Navbar'
@@ -13,7 +13,36 @@ import PWAUpdatePrompt from './components/ui/PWAUpdatePrompt'
 import SharePage from './pages/SharePage'
 import { PhoneCameraProvider, usePhoneCamera } from './contexts/PhoneCameraContext'
 import { photoAPI, emailAPI } from './services/api'
+import { savePhoto, getRecentPhotos, deletePhoto as dbDeletePhoto, markSynced, getPendingSync } from './services/db'
+import { sendOrQueueEmail, processEmailQueue } from './services/emailQueue'
 import toast from 'react-hot-toast'
+import { WifiOff, RefreshCw } from 'lucide-react'
+
+function OfflineBanner({ isOnline, pendingCount }) {
+  if (isOnline && pendingCount === 0) return null
+
+  return (
+    <div className={`fixed top-16 left-0 right-0 z-40 px-4 py-2.5 text-center text-sm font-medium transition-all ${
+      isOnline
+        ? 'bg-green-500/20 text-green-400 border-b border-green-500/20'
+        : 'bg-yellow-500/20 text-yellow-400 border-b border-yellow-500/20'
+    }`}>
+      <div className="flex items-center justify-center gap-2">
+        {isOnline ? (
+          <>
+            <RefreshCw size={14} className="animate-spin" />
+            <span>Syncing {pendingCount} photo{pendingCount !== 1 ? 's' : ''}...</span>
+          </>
+        ) : (
+          <>
+            <WifiOff size={14} />
+            <span>You're offline. Photos are saved locally and will sync when connection returns.</span>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function AppContent({ onConnectPhone }) {
   const navigate = useNavigate()
@@ -28,27 +57,126 @@ function AppContent({ onConnectPhone }) {
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(true)
   const [userEmail, setUserEmail] = useState('')
   const [sessionPhotos, setSessionPhotos] = useState([])
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [pendingCount, setPendingCount] = useState(0)
 
-  // Load photos from backend on mount
+  // Track online/offline status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true)
+      syncPendingData()
+    }
+    const handleOffline = () => setIsOnline(false)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  // Sync pending photos and emails when coming back online
+  const syncPendingData = useCallback(async () => {
+    try {
+      const pending = await getPendingSync()
+      setPendingCount(pending.length)
+
+      for (const photo of pending) {
+        try {
+          const response = await photoAPI.save({
+            image: photo.image,
+            layout: photo.layout || 'classic',
+            filters: photo.filters || {},
+            frame: photo.frame || 'none',
+            text: photo.text || null,
+            session_id: photo.session_id,
+          })
+          if (response.success) {
+            await markSynced(photo.id)
+            setPhotos(prev => prev.map(p =>
+              p.id === photo.id
+                ? { ...p, synced: true, share_token: response.data.share_token }
+                : p
+            ))
+          }
+        } catch {
+          // will retry next time
+        }
+      }
+
+      const emailResult = await processEmailQueue()
+      if (emailResult.sent > 0) {
+        toast.success(`${emailResult.sent} email${emailResult.sent !== 1 ? 's' : ''} sent`)
+      }
+
+      const remaining = await getPendingSync()
+      setPendingCount(remaining.length)
+    } catch {
+      // will retry on next online event
+    }
+  }, [])
+
+  // Check pending count on mount
+  useEffect(() => {
+    getPendingSync().then(pending => setPendingCount(pending.length))
+  }, [])
+
+  // Process email queue when coming online
+  useEffect(() => {
+    if (isOnline) {
+      processEmailQueue().then(result => {
+        if (result.sent > 0) {
+          toast.success(`${result.sent} email${result.sent !== 1 ? 's' : ''} sent`)
+        }
+      })
+    }
+  }, [isOnline])
+
+  // Load photos — IndexedDB first, then server sync
   useEffect(() => {
     const loadPhotos = async () => {
       try {
-        const response = await photoAPI.getRecent(50)
-        if (response.success && response.data) {
-          const formatted = response.data.map((p) => ({
-            id: p.id,
-            image: p.image_url,
-            share_token: p.share_token,
-            layout: p.layout_type,
-            filters: p.filters_applied,
-            frame: p.frame_used,
-            text: p.custom_text,
-            timestamp: p.created_at,
-          }))
-          setPhotos(formatted)
+        // Load from local DB first (instant, works offline)
+        const localPhotos = await getRecentPhotos(50)
+        if (localPhotos.length > 0) {
+          setPhotos(localPhotos)
+          setIsLoadingPhotos(false)
+        }
+
+        // Then try to sync from server
+        try {
+          const response = await photoAPI.getRecent(50)
+          if (response.success && response.data) {
+            const serverPhotos = response.data.map((p) => ({
+              id: p.id,
+              image: p.image_url,
+              share_token: p.share_token,
+              layout: p.layout_type,
+              filters: p.filters_applied,
+              frame: p.frame_used,
+              text: p.custom_text,
+              timestamp: p.created_at,
+              synced: true,
+            }))
+
+            // Merge: server photos take precedence, add any local-only photos
+            setPhotos(prev => {
+              const serverIds = new Set(serverPhotos.map(p => p.id))
+              const localOnly = prev.filter(p => !serverIds.has(p.id))
+              return [...serverPhotos, ...localOnly]
+            })
+
+            // Save server photos locally for offline access
+            for (const p of serverPhotos) {
+              await savePhoto({ ...p, synced: true })
+            }
+          }
+        } catch {
+          // Server unavailable — local photos are already loaded
         }
       } catch (err) {
-        console.warn('Could not load photos from server:', err.message)
+        console.warn('Could not load photos:', err.message)
       } finally {
         setIsLoadingPhotos(false)
       }
@@ -101,9 +229,21 @@ function AppContent({ onConnectPhone }) {
   }
 
   const addPhoto = async (photoData) => {
-    let savedPhoto = photoData
+    const localId = `local-${Date.now()}`
+    const photoRecord = {
+      ...photoData,
+      id: photoData.id || localId,
+      timestamp: new Date().toISOString(),
+      synced: false,
+    }
 
-    // Save to backend
+    // Save to IndexedDB immediately
+    await savePhoto(photoRecord)
+
+    setPhotos((prev) => [photoRecord, ...prev])
+    setSessionPhotos((prev) => [...prev, photoRecord])
+
+    // Try to sync to server in background
     try {
       const response = await photoAPI.save({
         image: photoData.image,
@@ -115,19 +255,34 @@ function AppContent({ onConnectPhone }) {
       })
 
       if (response.success) {
-        savedPhoto = {
-          ...photoData,
+        const syncedPhoto = {
+          ...photoRecord,
           id: response.data.id,
           share_token: response.data.share_token,
+          synced: true,
         }
+
+        // Update in IndexedDB
+        await savePhoto(syncedPhoto)
+
+        // Update state
+        setPhotos((prev) =>
+          prev.map(p => p.id === photoRecord.id ? syncedPhoto : p)
+        )
+        setSessionPhotos((prev) =>
+          prev.map(p => p.id === photoRecord.id ? syncedPhoto : p)
+        )
+
+        return syncedPhoto
       }
-    } catch (err) {
-      console.warn('Could not save to server, saving locally:', err.message)
+    } catch {
+      // Will sync later — photo is safe in IndexedDB
     }
 
-    setPhotos((prev) => [savedPhoto, ...prev])
-    setSessionPhotos((prev) => [...prev, savedPhoto])
-    return savedPhoto
+    const pending = await getPendingSync()
+    setPendingCount(pending.length)
+
+    return photoRecord
   }
 
   const finishSession = async () => {
@@ -139,7 +294,7 @@ function AppContent({ onConnectPhone }) {
       return
     }
 
-    toast.loading('Sending your strips...')
+    toast.loading('Processing your strips...')
 
     try {
       const stripImages = sessionPhotos
@@ -154,7 +309,6 @@ function AppContent({ onConnectPhone }) {
         return
       }
 
-      // Stitch all strips vertically into one composite image
       const composite = await new Promise((resolve, reject) => {
         const imgs = []
         let loaded = 0
@@ -204,13 +358,17 @@ function AppContent({ onConnectPhone }) {
 
       const compositeDataUrl = canvas.toDataURL('image/jpeg', 0.98)
 
-      await emailAPI.send({
+      const result = await sendOrQueueEmail({
         to: userEmail,
         imageUrl: compositeDataUrl,
       })
 
       toast.dismiss()
-      toast.success(`Sent to ${userEmail}`)
+      if (result.queued) {
+        toast.success('Email queued — will send when online')
+      } else {
+        toast.success(`Sent to ${userEmail}`)
+      }
     } catch (err) {
       toast.dismiss()
       console.warn('Session email failed:', err.message)
@@ -225,9 +383,15 @@ function AppContent({ onConnectPhone }) {
     setPhotos((prev) => prev.filter((p) => p.id !== id))
 
     try {
+      await dbDeletePhoto(id)
+    } catch {
+      // local delete already happened in state
+    }
+
+    try {
       await photoAPI.delete(id)
-    } catch (err) {
-      console.warn('Could not delete from server:', err.message)
+    } catch {
+      // will sync later
     }
   }
 
@@ -242,6 +406,8 @@ function AppContent({ onConnectPhone }) {
 
   return (
     <div className="min-h-screen bg-brand-dark">
+      <OfflineBanner isOnline={isOnline} pendingCount={pendingCount} />
+
       {currentView !== 'welcome' && currentView !== 'email' && (
         <Navbar
           currentView={currentView}
@@ -250,7 +416,11 @@ function AppContent({ onConnectPhone }) {
         />
       )}
 
-      <main className={currentView !== 'welcome' && currentView !== 'email' ? 'pt-16' : ''}>
+      <main className={`${
+        currentView !== 'welcome' && currentView !== 'email'
+          ? 'pt-16' + (!isOnline || pendingCount > 0 ? ' mt-10' : '')
+          : ''
+      }`}>
         {currentView === 'welcome' && (
           <WelcomePage
             photos={photos}
@@ -280,6 +450,7 @@ function AppContent({ onConnectPhone }) {
             onFinishSession={finishSession}
             externalStream={externalStream}
             onConnectPhone={() => navigate('/connect')}
+            isOnline={isOnline}
           />
         )}
         {currentView === 'gallery' && (

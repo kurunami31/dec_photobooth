@@ -2,7 +2,7 @@
 import { X, Download, Mail, Link2, Check, Copy, Share2, Printer, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getPrinter } from '../../services/printer'
-import { emailAPI } from '../../services/api'
+import { sendOrQueueEmail } from '../../services/emailQueue'
 import PrinterConnect from '../printer/PrinterConnect'
 
 export default function ShareModal({ image, photoId, onClose }) {
@@ -76,22 +76,20 @@ export default function ShareModal({ image, photoId, onClose }) {
     setIsSending(true)
 
     try {
-      const result = await emailAPI.send({
+      const result = await sendOrQueueEmail({
         to: email,
         photoId: photoId || null,
         imageUrl: safeImage,
       })
 
-      if (result.success) {
-        toast.success('Email sent!')
-        setEmail('')
+      if (result.queued) {
+        toast.success('Email queued — will send when online')
       } else {
-        const errMsg = typeof result.error === 'string' ? result.error : 'Failed to send email'
-        toast.error(errMsg)
+        toast.success('Email sent!')
       }
+      setEmail('')
     } catch (err) {
-      const msg = (typeof err.response?.data?.error === 'string' && err.response.data.error) || 'Failed to send email'
-      toast.error(msg)
+      toast.error('Failed to send email')
     } finally {
       setIsSending(false)
     }

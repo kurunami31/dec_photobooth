@@ -13,7 +13,7 @@ const RESOLUTIONS = [
   { label: '4K', width: 3840, height: 2160 },
 ]
 
-export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinishSession, externalStream, onConnectPhone }) {
+export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinishSession, externalStream, onConnectPhone, isOnline = true }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const [stream, setStream] = useState(null)
@@ -491,13 +491,20 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
                     {/* Connect Phone */}
                     {!isExternalCamera && onConnectPhone && (
                       <div className="pt-4 border-t border-white/5">
-                        <button
-                          onClick={onConnectPhone}
-                          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-brand-red/10 hover:bg-brand-red/20 text-brand-red text-sm font-medium transition-all"
-                        >
-                          <Smartphone size={16} />
-                          Connect Phone as Camera
-                        </button>
+                        {isOnline ? (
+                          <button
+                            onClick={onConnectPhone}
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-brand-red/10 hover:bg-brand-red/20 text-brand-red text-sm font-medium transition-all"
+                          >
+                            <Smartphone size={16} />
+                            Connect Phone as Camera
+                          </button>
+                        ) : (
+                          <div className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 text-gray-500 text-sm">
+                            <Smartphone size={16} />
+                            Phone camera requires internet
+                          </div>
+                        )}
                         <p className="text-xs text-gray-500 text-center mt-2">
                           Use your phone as an external camera
                         </p>

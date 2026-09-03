@@ -1,22 +1,19 @@
-﻿const CACHE_NAME = 'dec-photobooth-v2';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/logo.png',
-  '/manifest.json',
-];
+﻿const CACHE_NAME = 'dec-photobooth-v3';
 
-// Install event - cache essential assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+      return cache.addAll([
+        '/',
+        '/index.html',
+        '/logo.png',
+        '/manifest.json',
+      ]);
     })
   );
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -30,23 +27,12 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') {
-    return;
-  }
-
-  // Skip API calls and external requests
-  if (event.request.url.includes('/api/') || 
-      !event.request.url.startsWith(self.location.origin)) {
-    return;
-  }
+  if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
 
-  // For navigation requests (SPA routes like /gallery, /share/:token),
-  // always serve index.html from cache or network
+  // Navigation requests — serve index.html from cache, fall back to network
   if (event.request.mode === 'navigate') {
     event.respondWith(
       caches.match('/index.html').then((cached) => {
@@ -58,30 +44,38 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For other requests, try cache first, then network
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      if (response) {
-        return response;
-      }
+  // Same-origin requests — cache first, then network, cache the response
+  if (url.origin === self.location.origin) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
 
-      return fetch(event.request).then((fetchResponse) => {
-        // Don't cache non-successful responses
-        if (!fetchResponse || fetchResponse.status !== 200) {
-          return fetchResponse;
-        }
+        return fetch(event.request).then((response) => {
+          if (!response || response.status !== 200) return response;
 
-        // Clone the response
-        const responseToCache = fetchResponse.clone();
+          const toCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, toCache);
+          });
 
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
+          return response;
+        }).catch(() => {
+          // Offline and not in cache — for images, return a placeholder
+          if (event.request.destination === 'image') {
+            return new Response(
+              '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="#333" width="100" height="100"/><text fill="#666" x="50%" y="50%" text-anchor="middle" dy=".3em" font-size="12">Offline</text></svg>',
+              { headers: { 'Content-Type': 'image/svg+xml' } }
+            );
+          }
+          return new Response('Offline', { status: 503 });
         });
+      })
+    );
+    return;
+  }
 
-        return fetchResponse;
-      });
-    })
-  );
+  // External requests (fonts, CDN) — network only, no caching
+  // This avoids caching PeerJS or other third-party resources
 });
 
 // Handle messages
