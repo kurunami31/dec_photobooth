@@ -138,31 +138,31 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
       case 'classic':
         stripWidth = imgWidth
         photoWidth = imgWidth - padding * 2
-        photoHeight = photoWidth * 0.8
+        photoHeight = photoWidth * 1.3
         stripHeight = (photoHeight + gap) * photos.length + padding * 2 + 100
         break
       case 'grid':
         stripWidth = imgWidth
         photoWidth = (imgWidth - padding * 2 - gap) / 2
-        photoHeight = photoWidth * 0.8
+        photoHeight = photoWidth * 1.3
         stripHeight = (photoHeight + gap) * 2 + padding * 2 + 100
         break
       case 'horizontal':
         stripWidth = imgWidth * 1.5
         photoWidth = (stripWidth - padding * 2 - gap * (photos.length - 1)) / photos.length
-        photoHeight = photoWidth * 0.8
+        photoHeight = photoWidth * 1.3
         stripHeight = photoHeight + padding * 2 + 100
         break
       case 'polaroid':
         stripWidth = imgWidth
         photoWidth = imgWidth - padding * 3
-        photoHeight = photoWidth
+        photoHeight = photoWidth * 1.2
         stripHeight = (photoHeight + gap + 40) * photos.length + padding * 2 + 100
         break
       default:
         stripWidth = imgWidth
         photoWidth = imgWidth - padding * 2
-        photoHeight = photoWidth * 0.8
+        photoHeight = photoWidth * 1.3
         stripHeight = (photoHeight + gap) * photos.length + padding * 2 + 100
     }
 
