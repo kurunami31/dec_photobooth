@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { Camera, CameraOff, CheckCircle, Smartphone } from 'lucide-react'
+import { Camera, CameraOff, CheckCircle, Smartphone, Zap, ZapOff } from 'lucide-react'
 import Peer from 'peerjs'
 
 export default function PhoneCameraPage() {
   const [status, setStatus] = useState('initializing')
   const [error, setError] = useState(null)
+  const [torchEnabled, setTorchEnabled] = useState(false)
+  const [torchSupported, setTorchSupported] = useState(false)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
   const peerRef = useRef(null)
@@ -34,6 +36,10 @@ export default function PhoneCameraPage() {
         const track = stream.getVideoTracks()[0]
         const settings = track.getSettings()
         console.log('Phone camera resolution:', settings.width, 'x', settings.height)
+
+        if (settings.torch !== undefined) {
+          setTorchSupported(true)
+        }
 
         streamRef.current = stream
 
@@ -91,6 +97,21 @@ export default function PhoneCameraPage() {
     }
   }, [])
 
+  const toggleTorch = async () => {
+    if (!streamRef.current) return
+    const track = streamRef.current.getVideoTracks()[0]
+    if (!track) return
+    const newstate = !torchEnabled
+    try {
+      await track.applyConstraints({
+        advanced: [{ torch: newstate }],
+      })
+      setTorchEnabled(newstate)
+    } catch (err) {
+      console.warn('Torch not supported:', err)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
       {/* Camera Preview */}
@@ -109,6 +130,20 @@ export default function PhoneCameraPage() {
             <CheckCircle size={14} className="text-green-400" />
             <span className="text-green-400 text-xs font-medium">Connected</span>
           </div>
+        )}
+
+        {/* Flash toggle */}
+        {torchSupported && status === 'connected' && (
+          <button
+            onClick={toggleTorch}
+            className="absolute top-4 right-4 p-2.5 rounded-xl bg-black/40 hover:bg-black/60 transition-all backdrop-blur-sm"
+          >
+            {torchEnabled ? (
+              <Zap size={18} className="text-yellow-400" />
+            ) : (
+              <ZapOff size={18} className="text-gray-400" />
+            )}
+          </button>
         )}
       </div>
 
