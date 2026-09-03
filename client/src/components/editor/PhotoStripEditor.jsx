@@ -128,8 +128,8 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
 
     const ctx = canvas.getContext('2d')
     const imgWidth = 400
-    const padding = 24
-    const gap = 12
+    const padding = 36
+    const gap = 16
 
     // Calculate dimensions based on layout
     let stripWidth, stripHeight, photoWidth, photoHeight
