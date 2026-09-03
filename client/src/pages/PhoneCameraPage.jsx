@@ -57,11 +57,14 @@ export default function PhoneCameraPage() {
             bandwidth: 10000,
           })
           if (call) {
-            call.on('connected', () => {
+            call.on('stream', () => {
               setStatus('connected')
             })
             call.on('close', () => {
-              setStatus('streaming')
+              setStatus('connecting')
+            })
+            call.on('error', (err) => {
+              console.error('Call error:', err)
             })
           }
         })
