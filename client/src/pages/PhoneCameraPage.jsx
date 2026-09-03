@@ -24,11 +24,16 @@ export default function PhoneCameraPage() {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: 'environment',
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
+            width: { ideal: 3840 },
+            height: { ideal: 2160 },
+            frameRate: { ideal: 30 },
           },
           audio: false,
         })
+
+        const track = stream.getVideoTracks()[0]
+        const settings = track.getSettings()
+        console.log('Phone camera resolution:', settings.width, 'x', settings.height)
 
         streamRef.current = stream
 
@@ -46,7 +51,10 @@ export default function PhoneCameraPage() {
         })
 
         peer.on('open', () => {
-          const call = peer.call(desktopPeerId, stream)
+          const call = peer.call(desktopPeerId, stream, {
+            videoCodec: 'vp9',
+            bandwidth: 10000,
+          })
           if (call) {
             call.on('connected', () => {
               setStatus('connected')

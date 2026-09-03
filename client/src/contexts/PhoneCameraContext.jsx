@@ -31,8 +31,15 @@ export function PhoneCameraProvider({ children }) {
     })
 
     peer.on('call', (call) => {
-      call.answer()
+      call.answer(null, {
+        bandwidth: 10000,
+      })
       call.on('stream', (remoteStream) => {
+        const track = remoteStream.getVideoTracks()[0]
+        if (track) {
+          const settings = track.getSettings()
+          console.log('Received stream resolution:', settings.width, 'x', settings.height)
+        }
         setExternalStream(remoteStream)
         setIsConnected(true)
         setStatus('connected')
