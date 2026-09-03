@@ -6,7 +6,6 @@ export default function PhoneCameraPage() {
   const [status, setStatus] = useState('initializing')
   const [error, setError] = useState(null)
   const [torchEnabled, setTorchEnabled] = useState(false)
-  const [torchSupported, setTorchSupported] = useState(false)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
   const peerRef = useRef(null)
@@ -35,12 +34,7 @@ export default function PhoneCameraPage() {
 
         const track = stream.getVideoTracks()[0]
         const settings = track.getSettings()
-        const capabilities = track.getCapabilities ? track.getCapabilities() : {}
         console.log('Phone camera resolution:', settings.width, 'x', settings.height)
-
-        if (capabilities.torch) {
-          setTorchSupported(true)
-        }
 
         streamRef.current = stream
 
@@ -102,14 +96,14 @@ export default function PhoneCameraPage() {
     if (!streamRef.current) return
     const track = streamRef.current.getVideoTracks()[0]
     if (!track) return
-    const newstate = !torchEnabled
+    const newState = !torchEnabled
     try {
       await track.applyConstraints({
-        advanced: [{ torch: newstate }],
+        advanced: [{ torch: newState }],
       })
-      setTorchEnabled(newstate)
+      setTorchEnabled(newState)
     } catch (err) {
-      console.warn('Torch not supported:', err)
+      console.warn('Torch not available on this device')
     }
   }
 
@@ -134,7 +128,7 @@ export default function PhoneCameraPage() {
         )}
 
         {/* Flash toggle */}
-        {torchSupported && status === 'connected' && (
+        {status === 'connected' && (
           <button
             onClick={toggleTorch}
             className="absolute top-4 right-4 p-2.5 rounded-xl bg-black/40 hover:bg-black/60 transition-all backdrop-blur-sm"
