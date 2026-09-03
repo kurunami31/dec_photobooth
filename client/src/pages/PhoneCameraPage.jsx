@@ -88,9 +88,6 @@ export default function PhoneCameraPage() {
           const call = peer.call(desktopPeerId, stream)
           if (call) {
             console.log('Call initiated')
-            call.on('stream', (remoteStream) => {
-              console.log('Received remote stream (unexpected on phone side)')
-            })
             call.on('close', () => {
               console.log('Call closed')
               updateStatus('connecting')
@@ -144,75 +141,74 @@ export default function PhoneCameraPage() {
   }, [updateStatus])
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
-      <div className="relative w-full max-w-sm mb-6">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full rounded-2xl bg-gray-900"
-        />
+    <div className="fixed inset-0 bg-black overflow-hidden select-none">
+      {/* Fullscreen video */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className="absolute inset-0 w-full h-full object-cover"
+      />
 
+      {/* Top bar overlay */}
+      <div className="absolute top-0 left-0 right-0 p-3 flex items-center justify-between z-10">
+        {/* Status badge */}
         {status === 'connected' && (
-          <div className="absolute top-4 left-4 flex items-center gap-2 bg-green-500/20 backdrop-blur-sm rounded-full px-3 py-1.5">
-            <CheckCircle size={14} className="text-green-400" />
+          <div className="flex items-center gap-1.5 bg-green-500/20 backdrop-blur-sm rounded-full px-2.5 py-1">
+            <CheckCircle size={12} className="text-green-400" />
             <span className="text-green-400 text-xs font-medium">Connected</span>
           </div>
         )}
+        {(status === 'initializing' || status === 'connecting') && (
+          <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-full px-2.5 py-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+            <span className="text-white/70 text-xs">
+              {status === 'initializing' ? 'Starting...' : 'Connecting...'}
+            </span>
+          </div>
+        )}
+        {status === 'error' && (
+          <div className="flex items-center gap-1.5 bg-red-500/20 backdrop-blur-sm rounded-full px-2.5 py-1">
+            <CameraOff size={12} className="text-red-400" />
+            <span className="text-red-400 text-xs font-medium">Error</span>
+          </div>
+        )}
 
+        {/* Torch button */}
         {status === 'connected' && (
           <button
             onClick={toggleTorch}
-            className="absolute top-4 right-4 p-2.5 rounded-xl bg-black/40 hover:bg-black/60 transition-all backdrop-blur-sm active:scale-95"
+            className="p-2 rounded-full bg-black/40 backdrop-blur-sm active:scale-90 transition-transform"
           >
             {torchEnabled ? (
               <Zap size={18} className="text-yellow-400" />
             ) : (
-              <ZapOff size={18} className="text-gray-400" />
+              <ZapOff size={18} className="text-white/60" />
             )}
           </button>
         )}
       </div>
 
-      <div className="text-center">
-        {status === 'initializing' && (
-          <div className="flex items-center gap-2 text-gray-400">
-            <Camera size={18} className="animate-pulse" />
-            <span className="text-sm">Starting camera...</span>
-          </div>
-        )}
-        {status === 'connecting' && (
-          <div className="flex items-center gap-2 text-gray-400">
-            <Smartphone size={18} className="animate-pulse" />
-            <span className="text-sm">Connecting to photobooth...</span>
-          </div>
-        )}
-        {status === 'connected' && (
-          <div className="flex items-center gap-2 text-green-400">
-            <CheckCircle size={18} />
-            <span className="text-sm font-medium">Streaming to photobooth</span>
-          </div>
-        )}
+      {/* Bottom message */}
+      <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
         {status === 'error' && (
-          <div className="flex flex-col items-center gap-3">
-            <div className="flex items-center gap-2 text-red-400">
-              <CameraOff size={18} />
-              <span className="text-sm">{error}</span>
-            </div>
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-red-400 text-xs text-center">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-sm text-white transition-all"
+              className="px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-sm text-white text-xs"
             >
               Try again
             </button>
           </div>
         )}
+        {status !== 'error' && (
+          <p className="text-white/40 text-xs text-center">
+            Keep this page open while using the photobooth
+          </p>
+        )}
       </div>
-
-      <p className="text-gray-600 text-xs mt-8 text-center max-w-xs">
-        Keep this page open while using the photobooth. Your phone camera is now streaming to the booth.
-      </p>
     </div>
   )
 }

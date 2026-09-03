@@ -246,13 +246,29 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
           y = padding + index * (photoHeight + gap)
       }
 
-      // Draw rounded photo
+      // Draw photo preserving aspect ratio (cover mode)
       const radius = selectedLayout === 'polaroid' ? 4 : 8
+      const imgRatio = img.width / img.height
+      const slotRatio = photoWidth / photoHeight
+      let sx, sy, sw, sh
+
+      if (imgRatio > slotRatio) {
+        sh = img.height
+        sw = sh * slotRatio
+        sx = (img.width - sw) / 2
+        sy = 0
+      } else {
+        sw = img.width
+        sh = sw / slotRatio
+        sx = 0
+        sy = (img.height - sh) / 2
+      }
+
       ctx.save()
       ctx.beginPath()
       ctx.roundRect(x, y, photoWidth, photoHeight, radius)
       ctx.clip()
-      ctx.drawImage(img, x, y, photoWidth, photoHeight)
+      ctx.drawImage(img, sx, sy, sw, sh, x, y, photoWidth, photoHeight)
       ctx.restore()
     })
 
