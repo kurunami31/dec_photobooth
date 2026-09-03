@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Navbar from './components/layout/Navbar'
@@ -11,14 +11,13 @@ import PhoneCameraPage from './pages/PhoneCameraPage'
 import InstallPrompt from './components/ui/InstallPrompt'
 import PWAUpdatePrompt from './components/ui/PWAUpdatePrompt'
 import SharePage from './pages/SharePage'
+import { PhoneCameraProvider, usePhoneCamera } from './contexts/PhoneCameraContext'
 import { photoAPI, emailAPI } from './services/api'
 import toast from 'react-hot-toast'
 
-const ExternalStreamContext = createContext(null)
-
-function AppContent() {
+function AppContent({ onConnectPhone }) {
   const navigate = useNavigate()
-  const { externalStream } = useContext(ExternalStreamContext)
+  const { externalStream } = usePhoneCamera()
   const [currentView, setCurrentView] = useState(() => {
     return sessionStorage.getItem('dec_visited') ? 'camera' : 'welcome'
   })
@@ -319,25 +318,33 @@ function AppContent() {
   )
 }
 
-function App() {
-  const [externalStream, setExternalStream] = useState(null)
+function AppRoutes() {
+  const { peerId, roomCode, status, startPeer, cleanup } = usePhoneCamera()
+
+  const handleConnectPhone = () => {
+    startPeer()
+    navigate('/connect')
+  }
 
   return (
-    <ExternalStreamContext.Provider value={{ externalStream, setExternalStream }}>
+    <Routes>
+      <Route path="/share/:token" element={<SharePage />} />
+      <Route path="/phone" element={<PhoneCameraPage />} />
+      <Route path="/connect" element={
+        <PhoneConnectPage onBack={() => window.history.back()} />
+      } />
+      <Route path="*" element={<AppContent onConnectPhone={handleConnectPhone} />} />
+    </Routes>
+  )
+}
+
+function App() {
+  return (
+    <PhoneCameraProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/share/:token" element={<SharePage />} />
-          <Route path="/phone" element={<PhoneCameraPage />} />
-          <Route path="/connect" element={
-            <PhoneConnectPage
-              onStreamReceived={(stream) => setExternalStream(stream)}
-              onBack={() => window.history.back()}
-            />
-          } />
-          <Route path="*" element={<AppContent />} />
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
-    </ExternalStreamContext.Provider>
+    </PhoneCameraProvider>
   )
 }
 

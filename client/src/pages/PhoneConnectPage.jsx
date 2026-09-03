@@ -1,57 +1,18 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Smartphone, Copy, CheckCircle, ArrowLeft, Wifi } from 'lucide-react'
 import toast from 'react-hot-toast'
-import Peer from 'peerjs'
+import { usePhoneCamera } from '../contexts/PhoneCameraContext'
 
-export default function PhoneConnectPage({ onStreamReceived, onBack }) {
-  const [peerId, setPeerId] = useState(null)
-  const [roomCode, setRoomCode] = useState('')
-  const [status, setStatus] = useState('initializing')
+export default function PhoneConnectPage({ onBack }) {
+  const { peerId, roomCode, status, startPeer } = usePhoneCamera()
   const [copied, setCopied] = useState(false)
-  const peerRef = useRef(null)
 
   useEffect(() => {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase()
-    setRoomCode(code)
-
-    const peer = new Peer(`dec-booth-${code}`, {
-      host: '0.peerjs.com',
-      port: 443,
-      path: '/',
-      debug: 1,
-    })
-
-    peer.on('open', (id) => {
-      setPeerId(id)
-      setStatus('waiting')
-    })
-
-    peer.on('call', (call) => {
-      call.answer()
-      call.on('stream', (remoteStream) => {
-        setStatus('connected')
-        if (onStreamReceived) {
-          onStreamReceived(remoteStream)
-        }
-      })
-      call.on('close', () => {
-        setStatus('waiting')
-        toast.error('Phone disconnected')
-      })
-    })
-
-    peer.on('error', (err) => {
-      console.error('PeerJS error:', err)
-      toast.error('Connection error. Please try again.')
-    })
-
-    peerRef.current = peer
-
-    return () => {
-      peer.destroy()
+    if (!peerId) {
+      startPeer()
     }
-  }, [onStreamReceived])
+  }, [peerId, startPeer])
 
   const connectUrl = peerId
     ? `${window.location.origin}/phone?peer=${peerId}`
@@ -67,7 +28,6 @@ export default function PhoneConnectPage({ onStreamReceived, onBack }) {
   return (
     <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Back button */}
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-8"
@@ -77,7 +37,6 @@ export default function PhoneConnectPage({ onStreamReceived, onBack }) {
         </button>
 
         <div className="glass-card rounded-2xl p-8 text-center">
-          {/* Icon */}
           <div className="w-16 h-16 rounded-2xl bg-brand-red/10 flex items-center justify-center mx-auto mb-6">
             <Smartphone size={32} className="text-brand-red" />
           </div>
@@ -87,7 +46,6 @@ export default function PhoneConnectPage({ onStreamReceived, onBack }) {
             Scan the QR code with your phone's camera to use it as an external camera
           </p>
 
-          {/* QR Code */}
           {peerId ? (
             <div className="bg-white rounded-2xl p-6 inline-block mb-6">
               <QRCodeSVG
@@ -105,15 +63,13 @@ export default function PhoneConnectPage({ onStreamReceived, onBack }) {
             </div>
           )}
 
-          {/* Room Code */}
           <div className="mb-6">
             <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Room Code</p>
             <p className="text-3xl font-mono font-bold tracking-[0.3em] text-white">
-              {roomCode}
+              {roomCode || '------'}
             </p>
           </div>
 
-          {/* Status */}
           <div className="flex items-center justify-center gap-2 mb-6">
             {status === 'connected' ? (
               <>
@@ -128,7 +84,6 @@ export default function PhoneConnectPage({ onStreamReceived, onBack }) {
             )}
           </div>
 
-          {/* Copy Link */}
           <button
             onClick={handleCopy}
             className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-sm text-gray-300"
@@ -146,7 +101,6 @@ export default function PhoneConnectPage({ onStreamReceived, onBack }) {
             )}
           </button>
 
-          {/* Instructions */}
           <div className="mt-8 pt-6 border-t border-white/5">
             <p className="text-xs text-gray-500 mb-3 uppercase tracking-wider">How it works</p>
             <ol className="text-left text-sm text-gray-400 space-y-2">
