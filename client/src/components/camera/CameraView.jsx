@@ -1,7 +1,7 @@
 ﻿import { useState, useRef, useCallback, useEffect } from 'react'
 import { 
   Camera, RotateCcw, Settings2, Zap, ZapOff, 
-  CircleDot, Timer, LayoutGrid, ChevronDown, X, Usb, CheckCircle
+  CircleDot, Timer, LayoutGrid, ChevronDown, X, Usb, CheckCircle, Smartphone
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Countdown from './Countdown'
@@ -13,7 +13,7 @@ const RESOLUTIONS = [
   { label: '4K', width: 3840, height: 2160 },
 ]
 
-export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinishSession }) {
+export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinishSession, externalStream, onConnectPhone }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const [stream, setStream] = useState(null)
@@ -32,6 +32,7 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
   const [hasPermission, setHasPermission] = useState(null)
   const [isMobile, setIsMobile] = useState(false)
   const [isCapturing, setIsCapturing] = useState(false)
+  const [isExternalCamera, setIsExternalCamera] = useState(false)
 
   // Detect mobile device
   useEffect(() => {
@@ -96,9 +97,23 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
 
   // Initialize camera on mount
   useEffect(() => {
-    startCamera()
-    return () => stopCamera()
+    if (!externalStream) {
+      startCamera()
+      return () => stopCamera()
+    }
   }, [facingMode, selectedDeviceId, selectedResolution])
+
+  // Handle external stream from phone
+  useEffect(() => {
+    if (externalStream) {
+      setIsExternalCamera(true)
+      setHasPermission(true)
+      setStream(externalStream)
+      if (videoRef.current) {
+        videoRef.current.srcObject = externalStream
+      }
+    }
+  }, [externalStream])
 
   // Switch camera (front/back) - only for phones
   const switchCamera = () => {
@@ -217,8 +232,8 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
     toast.success('Saved to gallery')
   }
 
-  // Check if an external camera is selected
-  const isExternalCamera = !!selectedDeviceId
+  // Check if an external camera device is selected
+  const isExternalDevice = !!selectedDeviceId
 
   // Get the current camera label for display
   const getCurrentCameraLabel = () => {
@@ -371,7 +386,7 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
                     
                     <div className="space-y-5">
                       {/* Camera Device Picker */}
-                      {availableCameras.length > 1 && (
+                      {!isExternalCamera && availableCameras.length > 1 && (
                         <div>
                           <label className="text-sm text-gray-400 flex items-center gap-2 mb-3">
                             <Camera size={14} />
@@ -472,6 +487,36 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
                         </div>
                       </div>
                     </div>
+
+                    {/* Connect Phone */}
+                    {!isExternalCamera && onConnectPhone && (
+                      <div className="pt-4 border-t border-white/5">
+                        <button
+                          onClick={onConnectPhone}
+                          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-brand-red/10 hover:bg-brand-red/20 text-brand-red text-sm font-medium transition-all"
+                        >
+                          <Smartphone size={16} />
+                          Connect Phone as Camera
+                        </button>
+                        <p className="text-xs text-gray-500 text-center mt-2">
+                          Use your phone as an external camera
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Third-party camera apps info */}
+                    {!isExternalCamera && (
+                      <div className="pt-4 border-t border-white/5">
+                        <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">External Camera Apps</p>
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                          You can also use third-party apps like{' '}
+                          <span className="text-white font-medium">DroidCam</span>,{' '}
+                          <span className="text-white font-medium">Iriun Webcam</span>, or{' '}
+                          <span className="text-white font-medium">EpocCam</span> to connect your phone as a USB or WiFi camera. 
+                          Install the app on both your phone and computer, and the camera will appear in the picker above.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
