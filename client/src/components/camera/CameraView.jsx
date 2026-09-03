@@ -126,7 +126,7 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
     setSelectedDeviceId(deviceId)
   }
 
-  // Capture photo
+  // Capture photo - crops to match the object-cover preview the user sees
   const capturePhoto = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return null
 
@@ -134,9 +134,29 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
 
-    // Set canvas size to video size
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
+    const videoWidth = video.videoWidth
+    const videoHeight = video.videoHeight
+    if (!videoWidth || !videoHeight) return null
+
+    // Calculate visible region matching the 4/3 object-cover container
+    const containerAspect = 4 / 3
+    const videoAspect = videoWidth / videoHeight
+
+    let sx, sy, sw, sh
+    if (videoAspect > containerAspect) {
+      sh = videoHeight
+      sw = sh * containerAspect
+      sx = (videoWidth - sw) / 2
+      sy = 0
+    } else {
+      sw = videoWidth
+      sh = sw / containerAspect
+      sx = 0
+      sy = (videoHeight - sh) / 2
+    }
+
+    canvas.width = sw
+    canvas.height = sh
 
     // Mirror if front camera and no external device selected
     if (facingMode === 'user' && !selectedDeviceId) {
@@ -144,16 +164,14 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
       ctx.scale(-1, 1)
     }
 
-    // Draw video frame
-    ctx.drawImage(video, 0, 0)
+    // Draw only the visible region (matching what user sees in preview)
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
 
     // Reset transform
     ctx.setTransform(1, 0, 0, 1, 0, 0)
 
-    // Get image data
     const imageData = canvas.toDataURL('image/jpeg', 0.98)
 
-    // Trigger haptic feedback on mobile
     if (isMobile && navigator.vibrate) {
       navigator.vibrate(50)
     }
