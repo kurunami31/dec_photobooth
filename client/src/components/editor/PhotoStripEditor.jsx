@@ -297,19 +297,12 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
     })
 
     // Draw logo centered at bottom
-    const logoSize = 32
+    const logoSize = 48
     const logoX = (stripWidth - logoSize) / 2
-    const logoY = stripHeight - 44
+    const logoY = stripHeight - 60
 
     ctx.globalAlpha = 1
     ctx.drawImage(logo, logoX, logoY, logoSize, logoSize)
-
-    // Draw brand text under logo
-    ctx.fillStyle = bg?.color === '#1a1a1a' || bg?.gradient ? '#ffffff' : '#333333'
-    ctx.font = '600 11px Inter, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText('DEC PHOTOBOOTH', stripWidth / 2, stripHeight - 10)
-    ctx.globalAlpha = 1
 
     // Store generated strip
     const stripData = canvas.toDataURL('image/jpeg', 0.98)
