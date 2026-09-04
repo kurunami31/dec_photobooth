@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { 
   Download, Share2, ArrowLeft, LayoutGrid, 
-  Palette, Frame, Type, Sparkles, Printer, Loader2
+  Palette, Frame, Type, Sparkles, Printer, Loader2, FlipHorizontal
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import FilterPanel from './FilterPanel'
@@ -116,11 +116,12 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
   const [generatedStrip, setGeneratedStrip] = useState(null)
   const [printerConnected, setPrinterConnected] = useState(false)
   const [isPrinting, setIsPrinting] = useState(false)
+  const [mirrored, setMirrored] = useState(false)
 
   // Generate photo strip
   useEffect(() => {
     generateStrip()
-  }, [selectedLayout, selectedFilter, selectedFrame, selectedBackground, selectedPattern, customText])
+  }, [selectedLayout, selectedFilter, selectedFrame, selectedBackground, selectedPattern, customText, mirrored])
 
   const generateStrip = async () => {
     const canvas = canvasRef.current
@@ -268,7 +269,13 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
       ctx.beginPath()
       ctx.roundRect(x, y, photoWidth, photoHeight, radius)
       ctx.clip()
-      ctx.drawImage(img, sx, sy, sw, sh, x, y, photoWidth, photoHeight)
+      if (mirrored) {
+        ctx.translate(x + photoWidth, y)
+        ctx.scale(-1, 1)
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, photoWidth, photoHeight)
+      } else {
+        ctx.drawImage(img, sx, sy, sw, sh, x, y, photoWidth, photoHeight)
+      }
       ctx.restore()
     })
 
@@ -1049,6 +1056,22 @@ export default function PhotoStripEditor({ photos, onSave, onReset }) {
               className="input-field mt-2"
             />
           </div>
+
+          {/* Mirror Toggle */}
+          <button
+            onClick={() => setMirrored(!mirrored)}
+            className={`w-full glass-card rounded-2xl p-4 flex items-center justify-between transition-all ${
+              mirrored ? 'ring-2 ring-brand-red' : ''
+            }`}
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold text-gray-400">
+              <FlipHorizontal size={16} />
+              Mirror Photos
+            </span>
+            <span className={`text-xs uppercase tracking-wider ${mirrored ? 'text-brand-red' : 'text-gray-600'}`}>
+              {mirrored ? 'On' : 'Off'}
+            </span>
+          </button>
 
           {/* Printer Connection */}
           <div className="glass-card rounded-2xl p-5">
