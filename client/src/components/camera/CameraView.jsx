@@ -1,7 +1,7 @@
 ﻿import { useState, useRef, useCallback, useEffect } from 'react'
 import { 
   Camera, RotateCcw, Settings2, Zap, ZapOff, 
-  CircleDot, Timer, LayoutGrid, ChevronDown, X, Usb, CheckCircle, Smartphone
+  CircleDot, Timer, LayoutGrid, ChevronDown, X, Usb, CheckCircle, Smartphone, FlipHorizontal
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Countdown from './Countdown'
@@ -33,6 +33,7 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
   const [isMobile, setIsMobile] = useState(false)
   const [isCapturing, setIsCapturing] = useState(false)
   const [isExternalCamera, setIsExternalCamera] = useState(false)
+  const [mirrored, setMirrored] = useState(false)
 
   // Detect mobile device
   useEffect(() => {
@@ -158,8 +159,8 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
     canvas.width = sw
     canvas.height = sh
 
-    // Mirror if front camera and no external device selected
-    if (facingMode === 'user' && !selectedDeviceId) {
+    // Mirror if toggle is on
+    if (mirrored) {
       ctx.translate(canvas.width, 0)
       ctx.scale(-1, 1)
     }
@@ -177,7 +178,7 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
     }
 
     return imageData
-  }, [facingMode, selectedDeviceId, isMobile])
+  }, [facingMode, selectedDeviceId, isMobile, mirrored])
 
   // Handle capture button click
   const handleCapture = async () => {
@@ -307,7 +308,7 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
                   playsInline
                   muted
                   className={`w-full h-full object-cover transition-transform duration-300 ${
-                    facingMode === 'user' && !selectedDeviceId ? 'scale-x-[-1]' : ''
+                    mirrored ? 'scale-x-[-1]' : ''
                   }`}
                 />
                 
@@ -371,6 +372,17 @@ export default function CameraView({ onPhotoCapture, sessionPhotoCount, onFinish
                     ) : (
                       <ZapOff size={18} className="text-gray-400" />
                     )}
+                  </button>
+
+                  {/* Mirror toggle */}
+                  <button
+                    onClick={() => setMirrored(!mirrored)}
+                    className={`p-2.5 rounded-xl bg-black/40 hover:bg-black/60 transition-all backdrop-blur-sm ${
+                      mirrored ? 'ring-2 ring-white/40' : ''
+                    }`}
+                    aria-label="Toggle mirror"
+                  >
+                    <FlipHorizontal size={18} className={mirrored ? 'text-white' : 'text-gray-400'} />
                   </button>
 
                   {/* Settings button */}
